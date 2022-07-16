@@ -18,12 +18,16 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+//Macro for changing the integer size in use. Default is long.
 #define mcrd_int long
+//Macro for changing the floating point precision. Default is double.
 #define mcrd_flt double
+//Change this to be the floating point machine epsilon based on mcrd_float's def
 #define mcrd_eps 2.2204e-16
 /*
  * Struct Definitions:
  */
+//A struct for storing the solution to an ODE at a single time step.
 typedef struct{
     mcrd_flt* c;//coordinate array for a vector.
     mcrd_int  n;//number of coordinates.
@@ -34,29 +38,85 @@ typedef struct{
  */
 
 /*
- * x = malloc an mcrd vec.
- * x->c = malloc sizeof numel many mcrd_ints
- * x->n = numel
- * return x
+ * Memory allocation for the mcrd_vec struct.
+ * Blueprint:
+ *  x = malloc an mcrd vec.
+ *  x->c = malloc sizeof numel many mcrd_ints
+ *  x->n = numel
+ *  return x
+ *
+ * Args:
+ *  numel:    Number of elemnts for vector.
+ *
+ * Return:
+ *  The pointer from malloc()
  */
 mcrd_vec* mcrd_alloc_vec(mcrd_int numel);
-void      mcrd_free_vec(mcrd_vec* x);
+/*
+ * Free all pointers in *x then free x.
+ *
+ * Args:
+ *  x:  a struct to be freed from memory.
+ */
+void mcrd_free_vec(mcrd_vec* x);
+/*
+ * Check the sizes of the vector src and dest.
+ * If they match, then copy src->c's contents into dest->c.
+ * Otherwise throw an error and crash.
+ *
+ * Args:
+ *  x:  a struct to be freed from memory.
+ */
 void mcrd_copy(mcrd_vec* dest, mcrd_vec* src);
 
-
+/*
+ * Allocate an array of mcrd vectors which are accessed as
+ * x[k].c[i] = entry i of vector k. (0 <= k < nvecs)
+ * x[k].n    = numel for each k.
+ *
+ * Args:
+ *  nvecs:    Number of vectors to be created.
+ *  numel:    Number of elemnts for vector.
+ *
+ * Return:
+ *  The pointer from malloc()
+ */
 mcrd_vec* mcrd_alloc_block(mcrd_int nvecs, mcrd_int numel);
 
 /*
+ * Check the sizes of the vectors x, y, z. If they don't match,
+ * then throw an error and crash.
+ * Otherwise:
  * Linear combination of 2 vectors with n entries.
  * z->c[i] = a*x->c[i] + b*y->c[i]
  * For each i = 0,1,...,n-1
+ *
+ * Args:
+ *  a:  linear combination scalar for x.
+ *  x:  vector to be summed
+ *  b:  linear combination scalar for y.
+ *  y:  vector to be summed
+ *  z:  The result of the mathematical sum z = a*x + b*y
+ *
  */
 void mcrd_axpby(mcrd_flt a, mcrd_vec* x, mcrd_flt b, mcrd_vec* y, mcrd_vec* z);
 
 /*
+ * Check the sizes of the vectors x, y, z, w. If they don't match,
+ * then throw an error and crash.
+ * Otherwise:
  * Linear combination of 3 vectors with n entries.
  * w->c[i] = a*x->c[i] + b*y->c[i] + c*z->c[i]
  * For each i = 0,1,...,n-1
+ *
+ * Args:
+ *  a:  linear combination scalar for x.
+ *  x:  vector to be summed
+ *  b:  linear combination scalar for y.
+ *  y:  vector to be summed
+ *  c:  linear combination scalar for z.
+ *  z:  vector to be summed
+ *  z:  The result of the mathematical sum w = a*x + b*y + c*z
  */
 void mcrd_axpbypcz(mcrd_flt a, mcrd_vec* x,
                    mcrd_flt b, mcrd_vec* y,
@@ -71,7 +131,9 @@ void mcrd_axpbypcz(mcrd_flt a, mcrd_vec* x,
  * Executes as:
  *          x->c[i] = 3.0*z->c[i] + 4.0*w->c[i] + (-5.0)*p->c[i]
  * 
- * Here, we have numTerms = 3, a sum with 3 terms.
+ * Here, we have numTerms = 3, a sum with 3 terms. We also check the sizes
+ * of each vector to see if they match x->n. If not, then throw an error
+ * and crash.
  * Note: In the example above, the sum is started by setting
  *       x->c[i] = 3.0*z->c[i]
  *       then parsing the remaining arguments in a for loop.
@@ -79,15 +141,42 @@ void mcrd_axpbypcz(mcrd_flt a, mcrd_vec* x,
  *       x = x + y
  *       is desired, then  x must be the first term in the variable argument
  *       list.
+ *
+ * Args:
+ *  x        : Thre result of a linear combination with numTerms many terms.
+ *  numTerms : Number of terms in linear combination.
+ *  ...      : Variable arguments, see above for explanation.
  */
 void mcrd_lincombo(mcrd_vec* x, mcrd_int numTerms, ...);
 
 /*
- * root mean square difference of x and y. (2 norm difference.
+ * Check the sizes of the vectors x, y. If they don't match,
+ * then throw an error and crash.
+ * Otherwise:
+ * root mean square difference of x and y. (Weighted 2 norm difference.)
+ * Mathematically: If both vectors are of dimension N
+ *   sqrt( innerprod(x-y,x-y)/N )
+ *
+ * Args:
+ *  x:  A vector to be diff'd
+ *  y:  A vector to be diff'd
+ *
+ * Return:
+ *  Distance beftween x and y  using formula above.
  */
 mcrd_flt mcrd_mse(mcrd_vec* x, mcrd_vec* y);
 
-//rms norm of input vector.
+/*
+ * root mean square norm of x. (Weighted 2 norm.)
+ * Mathematically: If both vectors are of dimension N
+ *   sqrt( innerprod(x,y)/N )
+ *
+ * Args:
+ *  x:  A vector we want to know the norm of.
+ *
+ * Return:
+ *  Distance beftween x and the origin  using formula above.
+ */
 mcrd_flt mcrd_rms(mcrd_vec* x);
 
 /*
@@ -216,7 +305,7 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
                        mcrd_flt* workVec);
 
 /*
- * Use a 3 stage embedded Runge-Kutta method to automatically select
+ * Use the DOPRI5 method to automatically select
  * the a time step satisfying the given absolute tolerance.
  */
 void mcrd_o4_autostep(mcrd_vec* x_old,
