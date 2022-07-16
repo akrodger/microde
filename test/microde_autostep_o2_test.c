@@ -40,7 +40,7 @@ int main(int argc, char** argv){
     mcrd_vec* x_snap   = mcrd_alloc_block(Nt+1, 2);
     x_init->c[0] = 1;
     x_init->c[1] = 0;
-    vecField(NULL,NULL,1,a);
+    vecField(NULL,NULL,2,a,0);
     mcrd_ode_solve_o2(x_init,&x_snap,t, Nt+1,&vecField,abs_tol,work);
     for(k=0;k<Nt;k++){
         x_init->c[0] = cos(a*t[k]);
@@ -48,6 +48,7 @@ int main(int argc, char** argv){
         printf("\nMSE = %le",(double) mcrd_mse(x_init,&(x_snap[k])));
     }
     printf("\n");
+    vecField(NULL,NULL,1,a);
     mcrd_free_vec(x_init);
     free(work);
     free(t);
@@ -58,15 +59,23 @@ int main(int argc, char** argv){
     return 0;
 }
 
+
 void vecField(mcrd_vec* x,mcrd_vec* dxdt,int argc,...){
     static mcrd_flt a;
+    static mcrd_int feval;
     va_list arglist;
     if(argc == 0){
+        feval = feval + 1;
         dxdt->c[0] =  -a*x->c[1];
         dxdt->c[1] =  a*x->c[0];
-    }else if(argc == 1){
+    }else if(argc >= 1){
         va_start(arglist, argc);
         a = va_arg(arglist, mcrd_flt);
+        if( argc == 2 ){
+            feval = va_arg(arglist, mcrd_int);
+        }else{
+            printf("Num function evals = %ld\n", (long) feval );
+        }
     }
 }
 
