@@ -129,14 +129,63 @@ void mcrd_eval_dopr(mcrd_vec* x_old,
                             dt*dopr_b_6, vFld_stg4);
     vecField(x_new,vFld_new,0);
     mcrd_lincombo(x_cmp, 7,         1.0, x_old,
+                            dt*dopr_e_7, vFld_new,
                             dt*dopr_e_1, vFld_old,
                             dt*dopr_e_3, vFld_stg1,
                             dt*dopr_e_4, vFld_stg2,
                             dt*dopr_e_5, vFld_stg3,
-                            dt*dopr_e_6, vFld_stg4,
-                            dt*dopr_e_7, vFld_new);
+                            dt*dopr_e_6, vFld_stg4);
 }
 
+//compute dense outpute polynomial spline for the DOPRI(5,4) method.
+void mcrd_dopr_spline(mcrd_vec* spline,
+                    mcrd_vec* x_old,
+                    mcrd_vec* vFld_old,
+                    mcrd_vec* vFld_new,
+                    mcrd_vec* vFld_stg1,
+                    mcrd_vec* vFld_stg2,
+                    mcrd_vec* vFld_stg3,
+                    mcrd_vec* vFld_stg4,
+                    mcrd_flt dt,
+                    mcrd_flt theta){
+    static const mcrd_flt dopr_b_1 = 35.0/384.0;
+    static const mcrd_flt dopr_b_3 = 500.0/1113.0;
+    static const mcrd_flt dopr_b_4 = 125.0/192.0;
+    static const mcrd_flt dopr_b_5 = -2187.0/6784.0;
+    static const mcrd_flt dopr_b_6 = 11.0/84.0;
+    mcrd_flt b1 = (theta*theta)*(3.0-(2.0*theta))*dopr_b_1 +
+                  theta*((theta-1)*(theta-1)) -
+                  (theta*theta)*((theta-1)*(theta-1))*5.0*(
+                  2558722523-(31403016*theta)
+                  )/11282082423;
+    mcrd_flt b3 = (theta*theta)*(3.0-(2.0*theta))*dopr_b_3 +
+                  (theta*theta)*((theta-1)*(theta-1))*100.0*(
+                  882725551-(15701508*theta)
+                  )/32700410799;
+    mcrd_flt b4 = (theta*theta)*(3.0-(2.0*theta))*dopr_b_4 -
+                  (theta*theta)*((theta-1)*(theta-1))*25.0*(
+                  443332067-(31403016*theta)
+                  )/1880347072;
+    mcrd_flt b5 = (theta*theta)*(3.0-(2.0*theta))*dopr_b_5 +
+                  (theta*theta)*((theta-1)*(theta-1))*32805.0*(
+                  23143187-(3489224*theta)
+                  )/199316789632;
+    mcrd_flt b6 = (theta*theta)*(3.0-(2.0*theta))*dopr_b_6 -
+                  (theta*theta)*((theta-1)*(theta-1))*55.0*(
+                  29972135-(7076736*theta)
+                  )/822651844;
+    mcrd_flt b7 = (theta*theta)*(theta-1) +
+                  (theta*theta)*((theta-1)*(theta-1))*10.0*(
+                  7414447.0-(829305*theta)
+                  )/29380423.0;
+    mcrd_lincombo(spline, 7,    1.0, x_old,
+                            dt*b1, vFld_old,
+                            dt*b7, vFld_new,
+                            dt*b3, vFld_stg1,
+                            dt*b4, vFld_stg2,
+                            dt*b5, vFld_stg3,
+                            dt*b6, vFld_stg4);
+}
 //A few lines taken from ODEs II stiff problems pg 28 by Hairer and Wanner
 //for the purposes of selecting the time step of an ode solver.
 mcrd_flt mcrd_step_select(mcrd_flt dt,
@@ -528,8 +577,8 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
             theta = (t[k] - time_now)/dt1;
             n1 = 1.0-theta-(theta*(theta-1.0)*(1.0-(2.0*theta)));
             n2 =     theta+(theta*(theta-1.0)*(1.0-(2.0*theta)));
-            n3 = dt*theta*(theta-1.0)*(theta-1.0);
-            n4 = dt*theta*(theta-1.0)*theta;
+            n3 = dt1*theta*(theta-1.0)*(theta-1.0);
+            n4 = dt1*theta*(theta-1.0)*theta;
             mcrd_lincombo(&(x_snap[0][k]),4,
                            n1,&x_old,n2,&x_new,n3,&vFld_old,n4,&vFld_new);
             k++;
@@ -659,12 +708,16 @@ void mcrd_ode_solve_o4(mcrd_vec* x_init,
         //use polynomial interponation for dense output.
         while(time_now <= t[k] && t[k] < time_new){
             theta = (t[k] - time_now)/dt1;
-            n1 = 1.0-theta-(theta*(theta-1.0)*(1.0-(2.0*theta)));
-            n2 =     theta+(theta*(theta-1.0)*(1.0-(2.0*theta)));
-            n3 = dt*theta*(theta-1.0)*(theta-1.0);
-            n4 = dt*theta*(theta-1.0)*theta;
-            mcrd_lincombo(&(x_snap[0][k]),4,
-                           n1,&x_old,n2,&x_new,n3,&vFld_old,n4,&vFld_new);
+            mcrd_dopr_spline(&(x_snap[0][k]),
+                             &x_old,
+                             &vFld_old,
+                             &vFld_new,
+                             &vFld_stg1,
+                             &vFld_stg2,
+                             &vFld_stg3,
+                             &vFld_stg4,
+                             dt1,
+                             theta);
             k++;
             if(k >= t_len-1){
                 breakflag = 1;
