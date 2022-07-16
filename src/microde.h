@@ -64,6 +64,25 @@ void mcrd_axpbypcz(mcrd_flt a, mcrd_vec* x,
                    mcrd_vec* w);
 
 /*
+ * Linear combination with variable argument list.
+ * variable argument list expected in alternating order, floats then vecs.
+ * Example:
+ *      mcrd_lincombo(x, 3, 3.0,z, 4.0,w, -5.0,p);
+ * Executes as:
+ *          x->c[i] = 3.0*z->c[i] + 4.0*w->c[i] + (-5.0)*p->c[i]
+ * 
+ * Here, we have numTerms = 3, a sum with 3 terms.
+ * Note: In the example above, the sum is started by setting
+ *       x->c[i] = 3.0*z->c[i]
+ *       then parsing the remaining arguments in a for loop.
+ *       If behavior like:
+ *       x = x + y
+ *       is desired, then  x must be the first term in the variable argument
+ *       list.
+ */
+void mcrd_lincombo(mcrd_vec* x, mcrd_int numTerms, ...);
+
+/*
  * root mean square difference of x and y. (2 norm difference.
  */
 mcrd_flt mcrd_mse(mcrd_vec* x, mcrd_vec* y);
@@ -145,7 +164,7 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
                       mcrd_vec* vFld_old,
                       mcrd_vec* vFld_new,
                       mcrd_vec* x_cmp,
-                      mcrd_flt*  dt_old,
+                      mcrd_flt* dt_old_ptr,
                       mcrd_flt* dt_new_ptr,
                       void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
                       mcrd_flt* err_old_ptr,
@@ -155,18 +174,78 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
 /*
  * x_snap[0] assumed to have t_len many mcrd_vecs allocated to it.
  * to read time snapshot k, access x_snap[0][k].c, x_snap[0][k].n
+ * workVec assumed to have 5*x_init->n many mcrd_flts allocated.
  */
 void mcrd_ode_solve_o1(mcrd_vec* x_init,
-                       mcrd_vec* x_old,
-                       mcrd_vec* x_new,
-                       mcrd_vec* vFld_old,
-                       mcrd_vec* vFld_new,
-                       mcrd_vec* x_cmp,
                        mcrd_vec** x_snap,
                        mcrd_flt* t,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
-                       mcrd_flt  abs_tol);
+                       mcrd_flt  abs_tol,   
+                       mcrd_flt* workVec);
                        
                        
+/*
+ * Use a 3 stage embedded Runge-Kutta method to automatically select
+ * the a time step satisfying the given absolute tolerance.
+ */
+void mcrd_o2_autostep(mcrd_vec* x_old,
+                      mcrd_vec* x_new,
+                      mcrd_vec* vFld_old,
+                      mcrd_vec* vFld_new,
+                      mcrd_vec* vFld_stg1,
+                      mcrd_vec* vFld_stg2,
+                      mcrd_vec* x_cmp,
+                      mcrd_flt* dt_old_ptr,
+                      mcrd_flt* dt_new_ptr,
+                      void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
+                      mcrd_flt* err_old_ptr,
+                      mcrd_flt* err_new_ptr,
+                      mcrd_flt  abs_tol);
+/*
+ * x_snap[0] assumed to have t_len many mcrd_vecs allocated to it.
+ * to read time snapshot k, access x_snap[0][k].c, x_snap[0][k].n
+ * workVec assumed to have 7*x_init->n many mcrd_flts allocated.
+ */
+void mcrd_ode_solve_o2(mcrd_vec* x_init,
+                       mcrd_vec** x_snap,
+                       mcrd_flt* t,
+                       mcrd_int  t_len,
+                       void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
+                       mcrd_flt  abs_tol,
+                       mcrd_flt* workVec);
+
+/*
+ * Use a 3 stage embedded Runge-Kutta method to automatically select
+ * the a time step satisfying the given absolute tolerance.
+ */
+void mcrd_o4_autostep(mcrd_vec* x_old,
+                      mcrd_vec* x_new,
+                      mcrd_vec* vFld_old,
+                      mcrd_vec* vFld_new,
+                      mcrd_vec* vFld_stg1,
+                      mcrd_vec* vFld_stg2,
+                      mcrd_vec* vFld_stg3,
+                      mcrd_vec* vFld_stg4,
+                      mcrd_vec* x_cmp,
+                      mcrd_flt* dt_old_ptr,
+                      mcrd_flt* dt_new_ptr,
+                      void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
+                      mcrd_flt* err_old_ptr,
+                      mcrd_flt* err_new_ptr,
+                      mcrd_flt  abs_tol);
+
+/*
+ * x_snap[0] assumed to have t_len many mcrd_vecs allocated to it.
+ * to read time snapshot k, access x_snap[0][k].c, x_snap[0][k].n
+ * workVec assumed to have 9*x_init->n many mcrd_flts allocated.
+ */
+void mcrd_ode_solve_o4(mcrd_vec* x_init,
+                       mcrd_vec** x_snap,
+                       mcrd_flt* t,
+                       mcrd_int  t_len,
+                       void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
+                       mcrd_flt  abs_tol,
+                       mcrd_flt* workVec);
+
 #endif

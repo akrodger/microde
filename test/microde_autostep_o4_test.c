@@ -1,8 +1,7 @@
 /*
- * Microde Eule+Heun with auto step selection test file by Bram Rodgers.
- * Original Draft Dated: 14, July 2022
+ * Microde DOPRI(5,4) with auto step selection test file by Bram Rodgers.
+ * Original Draft Dated: 15, July 2022
  */
-
 
 /*
  * Macros and Includes go here: (Some common ones listed)
@@ -24,7 +23,7 @@ int main(int argc, char** argv){
     char* pEnd = NULL; 
     mcrd_flt pi      = acos(-1.0);
     mcrd_flt t_final = 2*pi;
-    mcrd_flt abs_tol = 1e-10;
+    mcrd_flt abs_tol = 5e-14;
     mcrd_int Nt;
     mcrd_int numel = 2;
     if(argc > 1){
@@ -37,12 +36,12 @@ int main(int argc, char** argv){
     mcrd_flt dt      = t_final/Nt;
     mcrd_flt* t       = linspace(0.0, t_final, Nt+1);
     mcrd_vec* x_init   = mcrd_alloc_vec(numel);
-    mcrd_flt* work     = (mcrd_flt*) malloc(sizeof(mcrd_flt)*5*numel);
+    mcrd_flt* work     = (mcrd_flt*) malloc(sizeof(mcrd_flt)*9*numel);
     mcrd_vec* x_snap   = mcrd_alloc_block(Nt+1, 2);
     x_init->c[0] = 1;
     x_init->c[1] = 0;
     vecField(NULL,NULL,1,a);
-    mcrd_ode_solve_o1(x_init,&x_snap,t, Nt+1,&vecField,abs_tol,work);
+    mcrd_ode_solve_o4(x_init,&x_snap,t, Nt+1,&vecField,abs_tol,work);
     for(k=0;k<Nt;k++){
         x_init->c[0] = cos(a*t[k]);
         x_init->c[1] = sin(a*t[k]);
