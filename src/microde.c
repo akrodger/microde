@@ -12,6 +12,29 @@
 #endif
 #define mcrd_min(a,b) ((a) < (b)) ? (a) : (b)
 #define mcrd_max(a,b) ((a) > (b)) ? (a) : (b)
+#define MCRD_FIRST_DT_SETUP \
+    {\
+    /*begin 1st time step heuristic from Hairer and Wanner, nontstiff ODEs*/\
+    n1 = mcrd_rms(&(x_snap[0][0]));\
+    n2 = mcrd_rms(&vFld_old);\
+    if(n1 < eps1 || n2 < eps1){\
+        dt1 = eps2;\
+    }else{\
+        dt1 = 0.01*n1/n2;\
+    }\
+    /*do an euler step with this trial time step*/\
+    mcrd_axpby(1.0,&x_old,dt1,&vFld_old,&x_new);\
+    vecField(&x_new,&vFld_new,0);\
+    /*use that euler step to estimate the ODE's acceleration*/\
+    n3 = mcrd_mse(&vFld_old,&vFld_new);\
+    if(mcrd_max(n2,n3) > eps3){\
+        dt2 = sqrt(0.01/mcrd_max(n2,n3));\
+    }else{\
+        dt2 = mcrd_max(eps2,dt1*eps4);\
+    }\
+    dt = mcrd_min(100*dt1,dt2)*sqrt(abs_tol);\
+    dt1 = mcrd_max(dt,100*mcrd_eps);\
+    }
 /*
  * Locally used helper functions:
  */
@@ -267,6 +290,7 @@ void mcrd_copy(mcrd_vec* dest, mcrd_vec* src){
             dest->c[i] = src->c[i];
         }
         #if defined(SHMEM_PARA_MICRODE)
+        #pragma omp barrier
         }
         #endif
     }else{
@@ -380,6 +404,7 @@ mcrd_flt mcrd_mse(mcrd_vec* x, mcrd_vec* y){
 	#endif
     mcrd_flt mse;
     mcrd_flt diff;
+    mse = 0.0;
     if(x->n != y->n){
         fprintf(stderr, "%s:Line %d %s::mcrd_mse::"
                         "x->n = %ld, y->n = %ld",
@@ -388,21 +413,18 @@ mcrd_flt mcrd_mse(mcrd_vec* x, mcrd_vec* y){
         exit(1);
     }
     #if defined(SHMEM_PARA_MICRODE)
-    #pragma omp parallel private(i,diff,chunkSize,N)
+    #pragma omp parallel default(shared) private(i,diff,chunkSize,N)
     {
     chunkSize = ((x->n) / ((mcrd_int) omp_get_num_threads()))+1;
-    #pragma omp masked
-    mse = 0.0;
-    #pragma omp barrier
     #endif        
     N = x->n;
     #if defined(SHMEM_PARA_MICRODE)
-    #pragma omp for schedule(static) reduction(+:mse)
+    #pragma omp for schedule(dynamic) reduction(+:mse)
     #endif
     for(i=0;i<x->n;i++){
         diff = (x->c[i] - y->c[i]);
-        diff *= diff;
-        mse += diff/N;
+        diff *= diff/N;
+        mse = mse + diff;
     }
     #if defined(SHMEM_PARA_MICRODE)
     }
@@ -418,21 +440,19 @@ mcrd_flt mcrd_rms(mcrd_vec* x){
 	#endif
     mcrd_flt rms;
     mcrd_flt sqr;
+    rms = 0.0;
     #if defined(SHMEM_PARA_MICRODE)
-    #pragma omp parallel private(i,sqr,chunkSize,N)
+    #pragma omp parallel default(shared) private(i,sqr,chunkSize,N)
     {
     chunkSize = ((x->n) / ((mcrd_int) omp_get_num_threads()))+1;
-    #pragma omp masked
-    rms = 0.0;
-    #pragma omp barrier
     #endif
     N = x->n;
     #if defined(SHMEM_PARA_MICRODE)
-    #pragma omp for schedule(static) reduction(+:rms)
+    #pragma omp for schedule(dynamic) reduction(+:rms)
     #endif
     for(i=0;i<x->n;i++){
-        sqr = x->c[i]*x->c[i];
-        rms += sqr/N;
+        sqr = x->c[i]*x->c[i]/N;
+        rms = rms + sqr;
     }
     #if defined(SHMEM_PARA_MICRODE)
     }
@@ -486,6 +506,10 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
         *dt_old_ptr = dt;
         //compute new dt via handcrafted artisinal PI feedback.
         dt = mcrd_step_select(dt, err_old, err_new, abs_tol,1);
+        if(dt < mcrd_eps){
+            dt = 100.0*mcrd_eps;
+            break;
+        }
     }
     err_old_ptr[0] = err_old;
     err_new_ptr[0] = err_new;
@@ -516,30 +540,11 @@ void mcrd_ode_solve_o1(mcrd_vec* x_init,
     x_cmp.n    = x_init->n;
     err_old = 1.0;
     err_new = 1.0;
-    //initializing vectors.
+    /*initializing vectors.*/
     mcrd_copy(&(x_snap[0][0]), x_init);
     mcrd_copy(&x_old, x_init);
     vecField(x_init,&vFld_old,0);
-    //begin 1st time step heuristic from Hairer and Wanner, nontstiff ODEs
-    n1 = mcrd_rms(&(x_snap[0][0]));
-    n2 = mcrd_rms(&vFld_old);
-    if(n1 < eps1 || n2 < eps1){
-        dt1 = eps2;
-    }else{
-        dt1 = 0.01*n1/n2;
-    }
-    //do an euler step with this trial time step
-    mcrd_axpby(1.0,&x_old,dt1,&vFld_old,&x_new);
-    vecField(&x_new,&vFld_new,0);
-    //use that euler step to estimate the ODE's acceleration
-    n3 = mcrd_mse(&vFld_old,&vFld_new);
-    if(mcrd_max(n2,n3) > eps3){
-        dt2 = sqrt(0.01/mcrd_max(n2,n3));
-    }else{
-        dt2 = mcrd_max(eps2,dt1*eps4);
-    }
-    dt = mcrd_min(100*dt1,dt2)*sqrt(abs_tol);
-    dt1 = dt;
+    MCRD_FIRST_DT_SETUP
     //begin main time stepping loop.
     time_now = 0.0;
     k = 1;
@@ -597,6 +602,10 @@ void mcrd_o2_autostep(mcrd_vec* x_old,
         *dt_old_ptr = dt;
         //compute new dt via handcrafted artisinal PI feedback.
         dt = mcrd_step_select(dt, err_old, err_new, abs_tol,2);
+        if(dt < mcrd_eps){
+            dt = 100.0*mcrd_eps;
+            break;
+        }
     }
     err_old_ptr[0] = err_old;
     err_new_ptr[0] = err_new;
@@ -636,30 +645,11 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
     vFld_stg2.n = x_init->n;
     err_old = 1.0;
     err_new = 1.0;
-    //initializing vectors.
+    /*initializing vectors.*/
     mcrd_copy(&(x_snap[0][0]), x_init);
     mcrd_copy(&x_old, x_init);
     vecField(x_init,&vFld_old,0);
-    //begin 1st time step heuristic from Hairer and Wanner, nontstiff ODEs
-    n1 = mcrd_rms(&(x_snap[0][0]));
-    n2 = mcrd_rms(&vFld_old);
-    if(n1 < eps1 || n2 < eps1){
-        dt1 = eps2;
-    }else{
-        dt1 = 0.01*n1/n2;
-    }
-    //do an euler step with this trial time step
-    mcrd_axpby(1.0,&x_old,dt1,&vFld_old,&x_new);
-    vecField(&x_new,&vFld_new,0);
-    //use that euler step to estimate the ODE's acceleration
-    n3 = mcrd_mse(&vFld_old,&vFld_new);
-    if(mcrd_max(n2,n3) > eps3){
-        dt2 = sqrt(0.01/mcrd_max(n2,n3));
-    }else{
-        dt2 = mcrd_max(eps2,dt1*eps4);
-    }
-    dt = mcrd_min(100*dt1,dt2)*sqrt(abs_tol);
-    dt1 = dt;
+    MCRD_FIRST_DT_SETUP
     //begin main time stepping loop.
     time_now = 0.0;
     k = 1;
@@ -714,19 +704,15 @@ void mcrd_o4_autostep(mcrd_vec* x_old,
     mcrd_flt err_new = 1.0;
     mcrd_flt dt = *dt_old_ptr;
     while(err_new > abs_tol){
-        //printf("dt = %le\n",dt);
         mcrd_eval_dopr(   x_old,   x_new,    x_cmp,
                       vFld_old,vFld_new,vFld_stg1,vFld_stg2,
                       vFld_stg3,vFld_stg4, dt,vecField);
         err_old = err_new;
         err_new = mcrd_mse(x_new, x_cmp);
-        //printf("err_new = %le\n",err_new);
         *dt_old_ptr = dt;
         //compute new dt via handcrafted artisinal PI feedback.
         dt = mcrd_step_select(dt, err_old, err_new, abs_tol,4);
     }
-    //printf("ACCEPTED\n");
-    //getc(stdin);
     err_old_ptr[0] = err_old;
     err_new_ptr[0] = err_new;
     dt_new_ptr[0] = dt;
@@ -767,31 +753,11 @@ void mcrd_ode_solve_o4(mcrd_vec* x_init,
     vFld_stg4.n = x_init->n;
     err_old = 1.0;
     err_new = 1.0;
-    //initializing vectors.
+    /*initializing vectors.*/
     mcrd_copy(&(x_snap[0][0]), x_init);
     mcrd_copy(&x_old, x_init);
     vecField(x_init,&vFld_old,0);
-    //begin 1st time step heuristic from Hairer and Wanner, nontstiff ODEs
-    n1 = mcrd_rms(&(x_snap[0][0]));
-    n2 = mcrd_rms(&vFld_old);
-    if(n1 < eps1 || n2 < eps1){
-        dt1 = eps2;
-    }else{
-        dt1 = 0.01*n1/n2;
-    }
-    //printf("\ndt1 = %lf\n",dt1);
-    //do an euler step with this trial time step
-    mcrd_axpby(1.0,&x_old,dt1,&vFld_old,&x_new);
-    vecField(&x_new,&vFld_new,0);
-    //use that euler step to estimate the ODE's acceleration
-    n3 = mcrd_mse(&vFld_old,&vFld_new);
-    if(mcrd_max(n2,n3) > eps3){
-        dt2 = sqrt(0.01/mcrd_max(n2,n3));
-    }else{
-        dt2 = mcrd_max(eps2,dt1*eps4);
-    }
-    dt = mcrd_min(100*dt1,dt2)*sqrt(abs_tol);
-    dt1 = dt;
+    MCRD_FIRST_DT_SETUP
     //begin main time stepping loop.
     time_now = 0.0;
     k = 1;

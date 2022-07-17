@@ -65,7 +65,7 @@ int main(int argc, char** argv){
 	wtime = omp_get_wtime() - wtime;
     printf("\nComp Time = %le", wtime);
 	#endif
-    printf("\nMSE       = %le",(double) mcrd_mse(x_init,&(x_snap[Nt])));
+    printf("\nMSE       = %2.16le",(double) mcrd_mse(x_init,&(x_snap[Nt])));
     printf("\n");
     vecField(NULL,NULL,-1);
     mcrd_free_vec(x_init);
@@ -122,7 +122,7 @@ void vecField(mcrd_vec* x,mcrd_vec* dxdt,int argc,...){
         {
         thTot = omp_get_num_threads();
         thNum = omp_get_thread_num();
-        #endif 
+        #endif
         N = x->n;
         chunkSize = N / thTot;
         chunkRem  = N % thTot;
