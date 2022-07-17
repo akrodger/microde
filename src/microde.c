@@ -7,6 +7,9 @@
  * Macros and Includes go here: (Some common ones included)
  */
 #include "microde.h"
+#if defined(SHMEM_PARA_MICRODE)
+#include "omp.h"
+#endif
 #define mcrd_min(a,b) ((a) < (b)) ? (a) : (b)
 #define mcrd_max(a,b) ((a) > (b)) ? (a) : (b)
 /*
@@ -36,21 +39,23 @@ void mcrd_eval_bgsp(mcrd_vec* x_old,
     static const mcrd_flt bgsp_e_2  = 0.25;
     static const mcrd_flt bgsp_e_3  = 1.0/3.0;
     static const mcrd_flt bgsp_e_4  = 0.125;
+    static mcrd_flt* ptrWrk[5];
+    static mcrd_flt scalWrk[5];
     mcrd_vec* x_stg = x_cmp;
     mcrd_axpby(1.0, x_old, dt*bgsp_a_21, vFld_old, x_stg);
     vecField(x_stg,vFld_stg1,0);
     mcrd_axpby(1.0, x_old, dt*bgsp_a_32, vFld_stg1, x_stg);
     vecField(x_stg,vFld_stg2,0);
-    mcrd_lincombo(x_new, 4,      1.0, x_old,
-                            dt*bgsp_b_1, vFld_old,
-                            dt*bgsp_b_2, vFld_stg1,
-                            dt*bgsp_b_3, vFld_stg2);
+    mcrd_lincombo(x_new, ptrWrk, scalWrk, 4,      1.0, x_old,
+                                            dt*bgsp_b_1, vFld_old,
+                                            dt*bgsp_b_2, vFld_stg1,
+                                            dt*bgsp_b_3, vFld_stg2);
     vecField(x_new,vFld_new,0);
-    mcrd_lincombo(x_cmp, 5,      1.0, x_old,
-                            dt*bgsp_e_1, vFld_old,
-                            dt*bgsp_e_2, vFld_stg1,
-                            dt*bgsp_e_3, vFld_stg2,
-                            dt*bgsp_e_4, vFld_new);
+    mcrd_lincombo(x_cmp, ptrWrk, scalWrk, 5,        1.0, x_old,
+                                            dt*bgsp_e_1, vFld_old,
+                                            dt*bgsp_e_2, vFld_stg1,
+                                            dt*bgsp_e_3, vFld_stg2,
+                                            dt*bgsp_e_4, vFld_new);
 }
 
 //helper function for evaluating the Dormand * Prince 5(4) method.
@@ -95,46 +100,48 @@ void mcrd_eval_dopr(mcrd_vec* x_old,
     static const mcrd_flt dopr_e_5  = -92097.0/339200.0;
     static const mcrd_flt dopr_e_6  = 187.0/2100.0;
     static const mcrd_flt dopr_e_7  = 1.0/40.0;
+    static mcrd_flt* ptrWrk[7];
+    static mcrd_flt scalWrk[7];
     mcrd_vec* x_stg = x_cmp;
     mcrd_vec* vFld_stg_extra = x_new;
     mcrd_axpby(1.0, x_old, dt*dopr_a_21, vFld_old, x_stg);
     vecField(x_stg,vFld_stg_extra,0);
-    mcrd_lincombo(x_stg, 3,         1.0,  x_old,
-                            dt*dopr_a_31, vFld_old,
-                            dt*dopr_a_32, vFld_stg_extra);
+    mcrd_lincombo(x_stg, ptrWrk, scalWrk, 3,         1.0, x_old,
+                                            dt*dopr_a_31, vFld_old,
+                                            dt*dopr_a_32, vFld_stg_extra);
     vecField(x_stg,vFld_stg1,0);
-    mcrd_lincombo(x_stg, 4,         1.0,  x_old,
-                            dt*dopr_a_41, vFld_old,
-                            dt*dopr_a_42, vFld_stg_extra,
-                            dt*dopr_a_43, vFld_stg1);
+    mcrd_lincombo(x_stg, ptrWrk, scalWrk, 4,         1.0, x_old,
+                                            dt*dopr_a_41, vFld_old,
+                                            dt*dopr_a_42, vFld_stg_extra,
+                                            dt*dopr_a_43, vFld_stg1);
     vecField(x_stg,vFld_stg2,0);
-    mcrd_lincombo(x_stg, 5,         1.0,  x_old,
-                            dt*dopr_a_51, vFld_old,
-                            dt*dopr_a_52, vFld_stg_extra,
-                            dt*dopr_a_53, vFld_stg1,
-                            dt*dopr_a_54, vFld_stg2);
+    mcrd_lincombo(x_stg, ptrWrk, scalWrk, 5,         1.0, x_old,
+                                            dt*dopr_a_51, vFld_old,
+                                            dt*dopr_a_52, vFld_stg_extra,
+                                            dt*dopr_a_53, vFld_stg1,
+                                            dt*dopr_a_54, vFld_stg2);
     vecField(x_stg,vFld_stg3,0);
-    mcrd_lincombo(x_stg, 6,         1.0,  x_old,
-                            dt*dopr_a_61, vFld_old,
-                            dt*dopr_a_62, vFld_stg_extra,
-                            dt*dopr_a_63, vFld_stg1,
-                            dt*dopr_a_64, vFld_stg2,
-                            dt*dopr_a_65, vFld_stg3);
+    mcrd_lincombo(x_stg, ptrWrk, scalWrk, 6,         1.0, x_old,
+                                            dt*dopr_a_61, vFld_old,
+                                            dt*dopr_a_62, vFld_stg_extra,
+                                            dt*dopr_a_63, vFld_stg1,
+                                            dt*dopr_a_64, vFld_stg2,
+                                            dt*dopr_a_65, vFld_stg3);
     vecField(x_stg,vFld_stg4,0);
-    mcrd_lincombo(x_new, 6,         1.0, x_old,
-                            dt*dopr_b_1, vFld_old,
-                            dt*dopr_b_3, vFld_stg1,
-                            dt*dopr_b_4, vFld_stg2,
-                            dt*dopr_b_5, vFld_stg3,
-                            dt*dopr_b_6, vFld_stg4);
+    mcrd_lincombo(x_new, ptrWrk, scalWrk, 6,        1.0, x_old,
+                                            dt*dopr_b_1, vFld_old,
+                                            dt*dopr_b_3, vFld_stg1,
+                                            dt*dopr_b_4, vFld_stg2,
+                                            dt*dopr_b_5, vFld_stg3,
+                                            dt*dopr_b_6, vFld_stg4);
     vecField(x_new,vFld_new,0);
-    mcrd_lincombo(x_cmp, 7,         1.0, x_old,
-                            dt*dopr_e_7, vFld_new,
-                            dt*dopr_e_1, vFld_old,
-                            dt*dopr_e_3, vFld_stg1,
-                            dt*dopr_e_4, vFld_stg2,
-                            dt*dopr_e_5, vFld_stg3,
-                            dt*dopr_e_6, vFld_stg4);
+    mcrd_lincombo(x_cmp, ptrWrk, scalWrk, 7,        1.0, x_old,
+                                            dt*dopr_e_7, vFld_new,
+                                            dt*dopr_e_1, vFld_old,
+                                            dt*dopr_e_3, vFld_stg1,
+                                            dt*dopr_e_4, vFld_stg2,
+                                            dt*dopr_e_5, vFld_stg3,
+                                            dt*dopr_e_6, vFld_stg4);
 }
 
 //compute dense outpute polynomial spline for the DOPRI(5,4) method.
@@ -153,6 +160,8 @@ void mcrd_dopr_spline(mcrd_vec* spline,
     static const mcrd_flt dopr_b_4 = 125.0/192.0;
     static const mcrd_flt dopr_b_5 = -2187.0/6784.0;
     static const mcrd_flt dopr_b_6 = 11.0/84.0;
+    static mcrd_flt* ptrWrk[7];
+    static mcrd_flt scalWrk[7];
     mcrd_flt b1 = (theta*theta)*(3.0-(2.0*theta))*dopr_b_1 +
                   theta*((theta-1)*(theta-1)) -
                   (theta*theta)*((theta-1)*(theta-1))*5.0*(
@@ -178,13 +187,13 @@ void mcrd_dopr_spline(mcrd_vec* spline,
                   (theta*theta)*((theta-1)*(theta-1))*10.0*(
                   7414447.0-(829305*theta)
                   )/29380423.0;
-    mcrd_lincombo(spline, 7,    1.0, x_old,
-                            dt*b1, vFld_old,
-                            dt*b7, vFld_new,
-                            dt*b3, vFld_stg1,
-                            dt*b4, vFld_stg2,
-                            dt*b5, vFld_stg3,
-                            dt*b6, vFld_stg4);
+    mcrd_lincombo(spline, ptrWrk, scalWrk,7,  1.0, x_old,
+                                            dt*b1, vFld_old,
+                                            dt*b7, vFld_new,
+                                            dt*b3, vFld_stg1,
+                                            dt*b4, vFld_stg2,
+                                            dt*b5, vFld_stg3,
+                                            dt*b6, vFld_stg4);
 }
 //A few lines taken from ODEs II stiff problems pg 28 by Hairer and Wanner
 //for the purposes of selecting the time step of an ode solver.
@@ -232,11 +241,34 @@ void mcrd_free_vec(mcrd_vec* x){
 }
 
 void mcrd_copy(mcrd_vec* dest, mcrd_vec* src){
-    mcrd_int i;
+    mcrd_int i, N, loopStart, loopEnd, thNum, thTot, chunkSize, chunkRem;
+    thNum = 0;
+    thTot = 1;
     if(src->n == dest->n){
-        for(i=0;i<src->n;i++){
+        #if defined(SHMEM_PARA_MICRODE)
+        #pragma omp parallel default(shared)\
+                private(i,chunkSize,N,\
+                       loopStart,loopEnd,chunkRem,thNum,thTot)
+        {
+        thTot = omp_get_num_threads();
+        thNum = omp_get_thread_num();
+        #endif 
+        N = dest->n;
+        chunkSize = N / thTot;
+        chunkRem  = N % thTot;
+        if(thNum < chunkRem){
+            loopStart = (chunkSize+1)*thNum;
+            loopEnd   = loopStart + chunkSize + 1;
+        }else{
+            loopStart = (chunkSize+1)*chunkRem + chunkSize*(thNum-chunkRem);
+            loopEnd   = loopStart + chunkSize;
+        }
+        for(i=loopStart;i<loopEnd;i++){
             dest->c[i] = src->c[i];
         }
+        #if defined(SHMEM_PARA_MICRODE)
+        }
+        #endif
     }else{
         fprintf(stderr, "%s:Line %d %s::mcrd_copy::"
                         "dest->n = %ld, src->n = %ld",
@@ -248,10 +280,13 @@ void mcrd_copy(mcrd_vec* dest, mcrd_vec* src){
 
 
 void mcrd_axpby(mcrd_flt a, mcrd_vec* x, mcrd_flt b, mcrd_vec* y, mcrd_vec* z){
-    mcrd_int i;
+    static mcrd_flt* ptrWrk[2];
+    static mcrd_flt  scalWrk[2];
     if(x->n == y->n && y->n == z->n){
-        for(i=0;i<x->n;i++){
-            z->c[i] = a*x->c[i]+b*y->c[i];
+        if(z == y){
+            mcrd_lincombo(z, ptrWrk, scalWrk, 2, b,y,a,x);
+        }else{
+            mcrd_lincombo(z, ptrWrk, scalWrk, 2, a,x,b,y);
         }
     }else{
         fprintf(stderr, "%s:Line %d %s::mcrd_axpby::"
@@ -266,10 +301,15 @@ void mcrd_axpbypcz(mcrd_flt a, mcrd_vec* x,
                    mcrd_flt b, mcrd_vec* y,
                    mcrd_flt c, mcrd_vec* z,
                    mcrd_vec* w){
-    mcrd_int i;
+    static mcrd_flt* ptrWrk[3];
+    static mcrd_flt  scalWrk[3];
     if(x->n == y->n && y->n == z->n && z->n == w->n){
-        for(i=0;i<x->n;i++){
-            w->c[i] = a*x->c[i]+b*y->c[i]+c*z->c[i];
+        if(w == z){
+            mcrd_lincombo(z, ptrWrk, scalWrk, 3, c,z,a,x,a,y);
+        }else if(w == y){
+            mcrd_lincombo(z, ptrWrk, scalWrk, 3, b,y,a,x,c,z);
+        }else{
+            mcrd_lincombo(z, ptrWrk, scalWrk, 3, a,x,b,y,c,z);
         }
     }else{
         fprintf(stderr, "%s:Line %d %s::mcrd_axpbypcz::"
@@ -281,16 +321,20 @@ void mcrd_axpbypcz(mcrd_flt a, mcrd_vec* x,
     
 }
 
-
-void mcrd_lincombo(mcrd_vec* x, mcrd_int numTerms, ...){
+void mcrd_lincombo(mcrd_vec* x, mcrd_flt** ptrWrk, mcrd_flt* scalWrk,
+                   mcrd_int numTerms, ...){
     va_list arglist;
-    mcrd_int i,j;
-    mcrd_vec* z;
-    mcrd_flt  a;
+    mcrd_int i,j, N, loopStart, loopEnd, thNum, thTot, chunkSize, chunkRem;
+    mcrd_vec* z = NULL;
+    mcrd_flt  a = 0.0;
+    thNum = 0;
+    thTot = 1;
     va_start(arglist, numTerms);
     for(j=0;j<numTerms;j++){
         a = va_arg(arglist, mcrd_flt);
         z = va_arg(arglist, mcrd_vec*);
+        scalWrk[j] = a;
+        ptrWrk[j] = z->c;
         if(x->n != z->n){
             fprintf(stderr, "%s:Line %d %s::mcrd_lincombo::"
                         "x->n = %ld, term = %ld, z->n = %ld",
@@ -299,22 +343,42 @@ void mcrd_lincombo(mcrd_vec* x, mcrd_int numTerms, ...){
         exit(1);
         }
     }
-    for(i=0;i<x->n;i++){
-        va_start(arglist, numTerms);
-        a = va_arg(arglist, mcrd_flt);
-        z = va_arg(arglist, mcrd_vec*);
-        x->c[i] = a*z->c[i];
+    #if defined(SHMEM_PARA_MICRODE)
+    #pragma omp parallel default(shared) private(i,j,a,N,\
+                       loopStart,loopEnd,chunkRem,thNum,thTot)
+    {
+    thTot = omp_get_num_threads();
+    thNum = omp_get_thread_num();
+    #endif 
+    N = x->n;
+    chunkSize = N / thTot;
+    chunkRem  = N % thTot;
+    if(thNum < chunkRem){
+        loopStart = (chunkSize+1)*thNum;
+        loopEnd   = loopStart + chunkSize + 1;
+    }else{
+        loopStart = (chunkSize+1)*chunkRem + chunkSize*(thNum-chunkRem);
+        loopEnd   = loopStart + chunkSize;
+    }
+    for(i=loopStart;i<loopEnd;i++){
+        a = scalWrk[0];
+        x->c[i] = a*ptrWrk[0][i];
         for(j=1;j<numTerms;j++){
-            a = va_arg(arglist, mcrd_flt);
-            z = va_arg(arglist, mcrd_vec*);
-            x->c[i] += a*z->c[i];
+            a = scalWrk[j];
+            x->c[i] += a*ptrWrk[j][i];
         }
     }
+    #if defined(SHMEM_PARA_MICRODE)
+    }
+    #endif
 }
 
 mcrd_flt mcrd_mse(mcrd_vec* x, mcrd_vec* y){
-    mcrd_int i;
-    mcrd_flt mse = 0.0;
+    mcrd_int i, N;
+    #if defined(SHMEM_PARA_MICRODE)
+	mcrd_int chunkSize;
+	#endif
+    mcrd_flt mse;
     mcrd_flt diff;
     if(x->n != y->n){
         fprintf(stderr, "%s:Line %d %s::mcrd_mse::"
@@ -323,23 +387,56 @@ mcrd_flt mcrd_mse(mcrd_vec* x, mcrd_vec* y){
                  (long) x->n, (long) y->n);
         exit(1);
     }
+    #if defined(SHMEM_PARA_MICRODE)
+    #pragma omp parallel private(i,diff,chunkSize,N)
+    {
+    chunkSize = ((x->n) / ((mcrd_int) omp_get_num_threads()))+1;
+    #pragma omp masked
+    mse = 0.0;
+    #pragma omp barrier
+    #endif        
+    N = x->n;
+    #if defined(SHMEM_PARA_MICRODE)
+    #pragma omp for schedule(static) reduction(+:mse)
+    #endif
     for(i=0;i<x->n;i++){
         diff = (x->c[i] - y->c[i]);
         diff *= diff;
-        mse += diff/x->n;
+        mse += diff/N;
     }
+    #if defined(SHMEM_PARA_MICRODE)
+    }
+    #endif
     return sqrt(mse);
 }
 
 //rms norm of input vector.
 mcrd_flt mcrd_rms(mcrd_vec* x){
-    mcrd_int i;
-    mcrd_flt rms = 0.0;
+    mcrd_int i, N;
+    #if defined(SHMEM_PARA_MICRODE)
+	mcrd_int chunkSize;
+	#endif
+    mcrd_flt rms;
     mcrd_flt sqr;
+    #if defined(SHMEM_PARA_MICRODE)
+    #pragma omp parallel private(i,sqr,chunkSize,N)
+    {
+    chunkSize = ((x->n) / ((mcrd_int) omp_get_num_threads()))+1;
+    #pragma omp masked
+    rms = 0.0;
+    #pragma omp barrier
+    #endif
+    N = x->n;
+    #if defined(SHMEM_PARA_MICRODE)
+    #pragma omp for schedule(static) reduction(+:rms)
+    #endif
     for(i=0;i<x->n;i++){
         sqr = x->c[i]*x->c[i];
-        rms += sqr/x->n;
+        rms += sqr/N;
     }
+    #if defined(SHMEM_PARA_MICRODE)
+    }
+    #endif
     return sqrt(rms);
 }
 
@@ -462,7 +559,7 @@ void mcrd_ode_solve_o1(mcrd_vec* x_init,
             theta = (t[k] - time_now)/dt1;
             mcrd_axpby(theta,&x_old,1.0-theta,&x_new,&(x_snap[0][k]));
             k++;
-            if(k >= t_len-1){
+            if(k >= t_len){
                 breakflag = 1;
                 break;
             }
@@ -517,6 +614,8 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
     static const mcrd_flt eps1 = 1e-5, eps2 = 1e-6, eps3 = 1e-15, eps4=1e-3;
     static mcrd_vec x_old,     x_new, vFld_old, vFld_new,
                     x_cmp, vFld_stg1,vFld_stg2;
+    static mcrd_flt* ptrWrk[4];
+    static mcrd_flt  scalWrk[4];
     mcrd_int k = 0, breakflag = 0;
     mcrd_flt n1, n2, n3, n4;
     mcrd_flt dt1, dt2, dt, err_old, err_new, time_now, time_new;
@@ -579,10 +678,10 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
             n2 =     theta+(theta*(theta-1.0)*(1.0-(2.0*theta)));
             n3 = dt1*theta*(theta-1.0)*(theta-1.0);
             n4 = dt1*theta*(theta-1.0)*theta;
-            mcrd_lincombo(&(x_snap[0][k]),4,
+            mcrd_lincombo(&(x_snap[0][k]),ptrWrk,scalWrk,4,
                            n1,&x_old,n2,&x_new,n3,&vFld_old,n4,&vFld_new);
             k++;
-            if(k >= t_len-1){
+            if(k >= t_len){
                 breakflag = 1;
                 break;
             }
@@ -719,7 +818,7 @@ void mcrd_ode_solve_o4(mcrd_vec* x_init,
                              dt1,
                              theta);
             k++;
-            if(k >= t_len-1){
+            if(k >= t_len){
                 breakflag = 1;
                 break;
             }

@@ -24,6 +24,10 @@
 #define mcrd_flt double
 //Change this to be the floating point machine epsilon based on mcrd_float's def
 #define mcrd_eps 2.2204e-16
+//The following macro is used to turn shared memory parallelism using
+//OpenMP on and off. An #ifdef check is done on the rms, mse, various
+//linear combinaion functions, and copy function.
+//#define SHMEM_PARA_MICRODE
 /*
  * Struct Definitions:
  */
@@ -127,7 +131,7 @@ void mcrd_axpbypcz(mcrd_flt a, mcrd_vec* x,
  * Linear combination with variable argument list.
  * variable argument list expected in alternating order, floats then vecs.
  * Example:
- *      mcrd_lincombo(x, 3, 3.0,z, 4.0,w, -5.0,p);
+ *      mcrd_lincombo(x,work,3, 3.0,z, 4.0,w, -5.0,p);
  * Executes as:
  *          x->c[i] = 3.0*z->c[i] + 4.0*w->c[i] + (-5.0)*p->c[i]
  * 
@@ -143,11 +147,16 @@ void mcrd_axpbypcz(mcrd_flt a, mcrd_vec* x,
  *       list.
  *
  * Args:
- *  x        : Thre result of a linear combination with numTerms many terms.
+ *  x        : The result of a linear combination with numTerms many terms.
+ *  ptrWrk   : A mcrd_flt** with at least sizeof(mcrd_flt*)*numTerms memory.
+ *             Used for internal pointer arithmetic.
+ *  scalWrk  : A mcrd_flt* with sizeof(mcrd_flt)*numTerms memory.
+ *             Used for internal pointer arithmetic.
  *  numTerms : Number of terms in linear combination.
  *  ...      : Variable arguments, see above for explanation.
  */
-void mcrd_lincombo(mcrd_vec* x, mcrd_int numTerms, ...);
+void mcrd_lincombo(mcrd_vec* x, mcrd_flt** ptrWrk, mcrd_flt* scalWrk,
+                   mcrd_int numTerms, ...);
 
 /*
  * Check the sizes of the vectors x, y. If they don't match,

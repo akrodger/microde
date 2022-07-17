@@ -37,9 +37,10 @@ int main(int argc, char** argv){
     mcrd_flt* t       = linspace(0.0, t_final, Nt+1);
     mcrd_vec* x_init   = mcrd_alloc_vec(numel);
     mcrd_flt* work     = (mcrd_flt*) malloc(sizeof(mcrd_flt)*9*numel);
-    mcrd_vec* x_snap   = mcrd_alloc_block(Nt+1, 2);
-    x_init->c[0] = 1;
-    x_init->c[1] = 0;
+    mcrd_vec* x_snap   = mcrd_alloc_block(Nt+1, numel);
+    for(k=0;k<numel;k++){
+        x_init->c[k] = (k+1)%2;
+    }
     vecField(NULL,NULL,2,a,0);
     mcrd_ode_solve_o4(x_init,&x_snap,t, Nt+1,&vecField,abs_tol,work);
     for(k=0;k<Nt;k++){
