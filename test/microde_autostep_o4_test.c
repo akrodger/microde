@@ -24,6 +24,7 @@ int main(int argc, char** argv){
     mcrd_flt pi      = acos(-1.0);
     mcrd_flt t_final = 2*pi;
     mcrd_flt abs_tol = 5e-14;
+    mcrd_flt rel_tol = 5e-14;
     mcrd_int Nt;
     mcrd_int numel = 2;
     if(argc > 1){
@@ -42,7 +43,7 @@ int main(int argc, char** argv){
         x_init->c[k] = (k+1)%2;
     }
     vecField(NULL,NULL,2,a,0);
-    mcrd_ode_solve_o4(x_init,&x_snap,t, Nt+1,&vecField,abs_tol,work);
+    mcrd_ode_solve_o4(x_init,&x_snap,t, Nt+1,&vecField,abs_tol,rel_tol,work);
     for(k=0;k<Nt;k++){
         x_init->c[0] = cos(a*t[k]);
         x_init->c[1] = sin(a*t[k]);

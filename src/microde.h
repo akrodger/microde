@@ -286,7 +286,10 @@ void mcrd_heun_step( mcrd_vec* x_old,
 *               variable argument count.
 * err_old_ptr : On input, pointer to the error achieved last time for x_old.
 * err_new_ptr : On output, pointer to the error achieved this time for x_new.
-* abs_tol     : The desired local error tolerance.
+* nrm_old_ptr : On input, pointer to norm of x_old
+* nrm_new_ptr : On output, pointer to norm of x_new.
+* abs_tol     : The desired local absolute error tolerance.
+* rel_tol     : The desired local relative error tolerance.
 *
 */
 void mcrd_o1_autostep(mcrd_vec* x_old,
@@ -299,7 +302,10 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
                       void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
                       mcrd_flt* err_old_ptr,
                       mcrd_flt* err_new_ptr,
-                      mcrd_flt  abs_tol);
+                      mcrd_flt* nrm_old_ptr,
+                      mcrd_flt* nrm_new_ptr,
+                      mcrd_flt  abs_tol,
+                      mcrd_flt  rel_tol);
 
 /*
  * x_snap[0] assumed to have t_len many mcrd_vecs allocated to it.
@@ -311,7 +317,8 @@ void mcrd_ode_solve_o1(mcrd_vec* x_init,
                        mcrd_flt* t,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
-                       mcrd_flt  abs_tol,   
+                       mcrd_flt  abs_tol,
+                       mcrd_flt  rel_tol,
                        mcrd_flt* workVec);
                        
                        
@@ -350,7 +357,10 @@ void mcrd_ode_solve_o1(mcrd_vec* x_init,
 *               variable argument count.
 * err_old_ptr : On input, pointer to the error achieved last time for x_old.
 * err_new_ptr : On output, pointer to the error achieved this time for x_new.
-* abs_tol     : The desired local error tolerance.
+* nrm_old_ptr : On input, pointer to norm of x_old
+* nrm_new_ptr : On output, pointer to norm of x_new.
+* abs_tol     : The desired local absolute error tolerance.
+* rel_tol     : The desired local relative error tolerance.
 *
 */
 void mcrd_o2_autostep(mcrd_vec* x_old,
@@ -365,7 +375,10 @@ void mcrd_o2_autostep(mcrd_vec* x_old,
                       void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
                       mcrd_flt* err_old_ptr,
                       mcrd_flt* err_new_ptr,
-                      mcrd_flt  abs_tol);
+                      mcrd_flt* nrm_old_ptr,
+                      mcrd_flt* nrm_new_ptr,
+                      mcrd_flt  abs_tol,
+                      mcrd_flt  rel_tol);
 /*
  * x_snap[0] assumed to have t_len many mcrd_vecs allocated to it.
  * to read time snapshot k, access x_snap[0][k].c, x_snap[0][k].n
@@ -377,6 +390,7 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
                        mcrd_flt  abs_tol,
+                       mcrd_flt  rel_tol,
                        mcrd_flt* workVec);
 
 /*
@@ -418,7 +432,10 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
 *               variable argument count.
 * err_old_ptr : On input, pointer to the error achieved last time for x_old.
 * err_new_ptr : On output, pointer to the error achieved this time for x_new.
-* abs_tol     : The desired local error tolerance.
+* nrm_old_ptr : On input, pointer to norm of x_old
+* nrm_new_ptr : On output, pointer to norm of x_new.
+* abs_tol     : The desired local absolute error tolerance.
+* rel_tol     : The desired local relative error tolerance.
 *
 */
 void mcrd_o4_autostep(mcrd_vec* x_old,
@@ -435,7 +452,10 @@ void mcrd_o4_autostep(mcrd_vec* x_old,
                       void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
                       mcrd_flt* err_old_ptr,
                       mcrd_flt* err_new_ptr,
-                      mcrd_flt  abs_tol);
+                      mcrd_flt* nrm_old_ptr,
+                      mcrd_flt* nrm_new_ptr,
+                      mcrd_flt  abs_tol,
+                      mcrd_flt  rel_tol);
 
 /*
  * x_snap[0] assumed to have t_len many mcrd_vecs allocated to it.
@@ -448,6 +468,7 @@ void mcrd_ode_solve_o4(mcrd_vec* x_init,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
                        mcrd_flt  abs_tol,
+                       mcrd_flt  rel_tol,
                        mcrd_flt* workVec);
 
 #endif

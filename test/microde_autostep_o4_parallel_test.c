@@ -27,6 +27,7 @@ int main(int argc, char** argv){
     mcrd_flt pi      = acos(-1.0);
     mcrd_flt t_final = 1.0;
     mcrd_flt abs_tol = 5e-14;
+    mcrd_flt rel_tol = 5e-14;
     mcrd_int Nt;
     mcrd_int numel = 100;
     if(argc > 2){
@@ -35,9 +36,9 @@ int main(int argc, char** argv){
     }else{
         Nt = 100;
     }
-    mcrd_int k       = 0, j=0;
+    mcrd_int k       = 0;
     mcrd_flt a       = 1.0;
-    mcrd_flt dt      = t_final/Nt;
+    mcrd_flt dt      = t_final;
     mcrd_flt* t       = linspace(0.0, t_final, Nt+1);
     mcrd_vec* x_init   = mcrd_alloc_vec(numel);
     mcrd_flt* work     = (mcrd_flt*) malloc(sizeof(mcrd_flt)*9*numel);
@@ -45,6 +46,7 @@ int main(int argc, char** argv){
     mcrd_vec* sten     = mcrd_alloc_vec(5);
     mcrd_flt  gc1[2];
     mcrd_flt  gc2[2];
+    dt = dt/Nt;
     #if defined(SHMEM_PARA_MICRODE)
 	double wtime;
 	#endif
@@ -60,7 +62,7 @@ int main(int argc, char** argv){
     #if defined(SHMEM_PARA_MICRODE)
 	wtime = omp_get_wtime();
 	#endif
-    mcrd_ode_solve_o4(x_init,&x_snap,t, Nt+1,&vecField,abs_tol,work);
+    mcrd_ode_solve_o4(x_init,&x_snap,t, Nt+1,&vecField,abs_tol,rel_tol,work);
     #if defined(SHMEM_PARA_MICRODE)
 	wtime = omp_get_wtime() - wtime;
     printf("\nComp Time = %le", wtime);
@@ -137,22 +139,22 @@ void vecField(mcrd_vec* x,mcrd_vec* dxdt,int argc,...){
             dxdt->c[i] = 0.0;
             if(i < sm1o2){
                 for(j=0;j<(sm1o2)-i;j++){
-                    dxdt->c[i] += sten[j]*gc1[j+i];
+                    dxdt->c[i] += a*sten[j]*gc1[j+i];
                 }
                 for(j=0;j<=i+(sm1o2);j++){
-                    dxdt->c[i] += sten[j+(sm1o2)-i]*x->c[j];
+                    dxdt->c[i] += a*sten[j+(sm1o2)-i]*x->c[j];
                 }
             }else if(i < x->n -(sm1o2) ){
                 for(j=0;j<slen;j++){
-                    dxdt->c[i] += sten[j]*x->c[i+j-sm1o2];
+                    dxdt->c[i] += a*sten[j]*x->c[i+j-sm1o2];
                 }
             }else{//bottom layer of gohst cells
                 for(j=i-(sm1o2);j < N;j++){
-                    dxdt->c[i] += sten[j+(sm1o2)-i]*x->c[j];
+                    dxdt->c[i] += a*sten[j+(sm1o2)-i]*x->c[j];
                 }
                 slen_bot = sm1o2 - (N-i)+1;
                 for(j=0;j<slen_bot;j++){
-                    dxdt->c[i] += sten[slen-slen_bot+j]*gc2[j];
+                    dxdt->c[i] += a*sten[slen-slen_bot+j]*gc2[j];
                 }
             }
         }

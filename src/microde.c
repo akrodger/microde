@@ -10,8 +10,8 @@
 #if defined(SHMEM_PARA_MICRODE)
 #include "omp.h"
 #endif
-#define mcrd_min(a,b) ((a) < (b)) ? (a) : (b)
-#define mcrd_max(a,b) ((a) > (b)) ? (a) : (b)
+#define mcrd_min(a,b) (((a) < (b)) ? (a) : (b))
+#define mcrd_max(a,b) (((a) > (b)) ? (a) : (b))
 #define MCRD_FIRST_DT_SETUP \
     {\
     /*begin 1st time step heuristic from Hairer and Wanner, nontstiff ODEs*/\
@@ -329,11 +329,11 @@ void mcrd_axpbypcz(mcrd_flt a, mcrd_vec* x,
     static mcrd_flt  scalWrk[3];
     if(x->n == y->n && y->n == z->n && z->n == w->n){
         if(w == z){
-            mcrd_lincombo(z, ptrWrk, scalWrk, 3, c,z,a,x,a,y);
+            mcrd_lincombo(w, ptrWrk, scalWrk, 3, c,z,a,x,a,y);
         }else if(w == y){
-            mcrd_lincombo(z, ptrWrk, scalWrk, 3, b,y,a,x,c,z);
+            mcrd_lincombo(w, ptrWrk, scalWrk, 3, b,y,a,x,c,z);
         }else{
-            mcrd_lincombo(z, ptrWrk, scalWrk, 3, a,x,b,y,c,z);
+            mcrd_lincombo(w, ptrWrk, scalWrk, 3, a,x,b,y,c,z);
         }
     }else{
         fprintf(stderr, "%s:Line %d %s::mcrd_axpbypcz::"
@@ -363,7 +363,7 @@ void mcrd_lincombo(mcrd_vec* x, mcrd_flt** ptrWrk, mcrd_flt* scalWrk,
             fprintf(stderr, "%s:Line %d %s::mcrd_lincombo::"
                         "x->n = %ld, term = %ld, z->n = %ld",
                  __FILE__, __LINE__, __func__,
-                 (long) x->n, (long) i, (long) z->n);
+                 (long) x->n, (long) j, (long) z->n);
         exit(1);
         }
     }
@@ -475,7 +475,6 @@ void mcrd_heun_step( mcrd_vec* x_old,
                      mcrd_vec* x_stg,
                      mcrd_flt  dt,
                      void (*vecField)(mcrd_vec*,mcrd_vec*,int,...)){
-    mcrd_int i;
     mcrd_euler_step(x_old,x_stg,vFld_old,dt,vecField);
     vecField(x_stg,x_new,0);
     mcrd_axpbypcz(1.0,x_old,0.5*dt,vFld_old,0.5*dt,x_new,x_new);
@@ -492,25 +491,29 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
                       void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
                       mcrd_flt* err_old_ptr,
                       mcrd_flt* err_new_ptr,
-                      mcrd_flt  abs_tol){
-    mcrd_int i = 0;
+                      mcrd_flt* nrm_old_ptr,
+                      mcrd_flt* nrm_new_ptr,
+                      mcrd_flt  abs_tol,
+                      mcrd_flt  rel_tol){
     mcrd_flt err_old = err_old_ptr[0];
     mcrd_flt err_new = 1.0;
+    mcrd_flt nrm_old = nrm_old_ptr[0];
+    mcrd_flt nrm_new = 1.0;
+    mcrd_flt tol_bound;
     mcrd_flt dt = *dt_old_ptr;
-    while(err_new > abs_tol){
+    do{
         mcrd_axpby(1.0, x_old, dt, vFld_old, x_new);
         vecField(x_new,vFld_new,0);
         mcrd_axpbypcz(1.0,x_old,0.5*dt,vFld_old,0.5*dt,vFld_new,x_cmp);
         err_old = err_new;
         err_new = mcrd_mse(x_new, x_cmp);
+        nrm_new = mcrd_rms(x_new);
         *dt_old_ptr = dt;
         //compute new dt via handcrafted artisinal PI feedback.
         dt = mcrd_step_select(dt, err_old, err_new, abs_tol,1);
-        if(dt < mcrd_eps){
-            dt = 100.0*mcrd_eps;
-            break;
-        }
-    }
+        tol_bound = abs_tol + mcrd_max(nrm_old,nrm_new)*(rel_tol);
+    }while(err_new > tol_bound);
+    nrm_new_ptr[0] = nrm_new;
     err_old_ptr[0] = err_old;
     err_new_ptr[0] = err_new;
     dt_new_ptr[0] = dt;
@@ -521,7 +524,8 @@ void mcrd_ode_solve_o1(mcrd_vec* x_init,
                        mcrd_flt* t,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
-                       mcrd_flt  abs_tol,   
+                       mcrd_flt  abs_tol,
+                       mcrd_flt  rel_tol,
                        mcrd_flt* workVec){
     static const mcrd_flt eps1 = 1e-5, eps2 = 1e-6, eps3 = 1e-15, eps4=1e-3;
     static mcrd_vec x_old, x_new, vFld_old, vFld_new, x_cmp;
@@ -552,7 +556,8 @@ void mcrd_ode_solve_o1(mcrd_vec* x_init,
         mcrd_o1_autostep(&x_old,&x_new,
                       &vFld_old, &vFld_new,&x_cmp,
                       &dt1,&dt2,vecField,
-                      &err_old,&err_new,abs_tol);
+                      &err_old,&err_new,&n1,&n2,abs_tol,rel_tol);
+        n1 = n2;
         time_new = time_now + dt1;
         if(time_new > t[t_len-1] && k == t_len-1){
             mcrd_axpby(1.0,&x_old,
@@ -588,25 +593,29 @@ void mcrd_o2_autostep(mcrd_vec* x_old,
                       void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
                       mcrd_flt* err_old_ptr,
                       mcrd_flt* err_new_ptr,
-                      mcrd_flt  abs_tol){
-    mcrd_int i = 0;
+                      mcrd_flt* nrm_old_ptr,
+                      mcrd_flt* nrm_new_ptr,
+                      mcrd_flt  abs_tol,
+                      mcrd_flt  rel_tol){
     mcrd_flt err_old = err_old_ptr[0];
     mcrd_flt err_new = 1.0;
+    mcrd_flt nrm_old = nrm_old_ptr[0];
+    mcrd_flt nrm_new = 1.0;
+    mcrd_flt tol_bound;
     mcrd_flt dt = *dt_old_ptr;
-    while(err_new > abs_tol){
+    do{
        mcrd_eval_bgsp(   x_old,   x_new,    x_cmp,
                       vFld_old,vFld_new,vFld_stg1,vFld_stg2,
                       dt,vecField);
         err_old = err_new;
         err_new = mcrd_mse(x_new, x_cmp);
+        nrm_new = mcrd_rms(x_new);
         *dt_old_ptr = dt;
         //compute new dt via handcrafted artisinal PI feedback.
         dt = mcrd_step_select(dt, err_old, err_new, abs_tol,2);
-        if(dt < mcrd_eps){
-            dt = 100.0*mcrd_eps;
-            break;
-        }
-    }
+        tol_bound = abs_tol + mcrd_max(nrm_old,nrm_new)*(rel_tol);
+    }while(err_new > tol_bound);
+    nrm_new_ptr[0] = nrm_new;
     err_old_ptr[0] = err_old;
     err_new_ptr[0] = err_new;
     dt_new_ptr[0] = dt;
@@ -619,6 +628,7 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
                        mcrd_flt  abs_tol,
+                       mcrd_flt  rel_tol,
                        mcrd_flt* workVec){
     static const mcrd_flt eps1 = 1e-5, eps2 = 1e-6, eps3 = 1e-15, eps4=1e-3;
     static mcrd_vec x_old,     x_new, vFld_old, vFld_new,
@@ -626,7 +636,7 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
     static mcrd_flt* ptrWrk[4];
     static mcrd_flt  scalWrk[4];
     mcrd_int k = 0, breakflag = 0;
-    mcrd_flt n1, n2, n3, n4;
+    mcrd_flt n1, n2, n3, m1, m2, m3, m4;
     mcrd_flt dt1, dt2, dt, err_old, err_new, time_now, time_new;
     mcrd_flt theta = 0.0;
     x_old.c     = workVec;
@@ -659,17 +669,18 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
                       &vFld_stg1, &vFld_stg2,
                       &x_cmp,
                       &dt1,&dt2,vecField,
-                      &err_old,&err_new,abs_tol);
+                      &err_old,&err_new,&n1,&n2,abs_tol,rel_tol);
+        n1 = n2;
         time_new = time_now + dt1;
         //use polynomial interponation for dense output.
         while(time_now <= t[k] && t[k] < time_new){
             theta = (t[k] - time_now)/dt1;
-            n1 = 1.0-theta-(theta*(theta-1.0)*(1.0-(2.0*theta)));
-            n2 =     theta+(theta*(theta-1.0)*(1.0-(2.0*theta)));
-            n3 = dt1*theta*(theta-1.0)*(theta-1.0);
-            n4 = dt1*theta*(theta-1.0)*theta;
+            m1 = 1.0-theta-(theta*(theta-1.0)*(1.0-(2.0*theta)));
+            m2 =     theta+(theta*(theta-1.0)*(1.0-(2.0*theta)));
+            m3 = dt1*theta*(theta-1.0)*(theta-1.0);
+            m4 = dt1*theta*(theta-1.0)*theta;
             mcrd_lincombo(&(x_snap[0][k]),ptrWrk,scalWrk,4,
-                           n1,&x_old,n2,&x_new,n3,&vFld_old,n4,&vFld_new);
+                           m1,&x_old,m2,&x_new,m3,&vFld_old,m4,&vFld_new);
             k++;
             if(k >= t_len){
                 breakflag = 1;
@@ -698,21 +709,29 @@ void mcrd_o4_autostep(mcrd_vec* x_old,
                       void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
                       mcrd_flt* err_old_ptr,
                       mcrd_flt* err_new_ptr,
-                      mcrd_flt  abs_tol){
-    mcrd_int i = 0;
+                      mcrd_flt* nrm_old_ptr,
+                      mcrd_flt* nrm_new_ptr,
+                      mcrd_flt  abs_tol,
+                      mcrd_flt  rel_tol){
     mcrd_flt err_old = err_old_ptr[0];
     mcrd_flt err_new = 1.0;
+    mcrd_flt nrm_old = nrm_old_ptr[0];
+    mcrd_flt nrm_new = 1.0;
+    mcrd_flt tol_bound;
     mcrd_flt dt = *dt_old_ptr;
-    while(err_new > abs_tol){
+    do{
         mcrd_eval_dopr(   x_old,   x_new,    x_cmp,
                       vFld_old,vFld_new,vFld_stg1,vFld_stg2,
                       vFld_stg3,vFld_stg4, dt,vecField);
         err_old = err_new;
         err_new = mcrd_mse(x_new, x_cmp);
+        nrm_new = mcrd_rms(x_new);
         *dt_old_ptr = dt;
         //compute new dt via handcrafted artisinal PI feedback.
         dt = mcrd_step_select(dt, err_old, err_new, abs_tol,4);
-    }
+        tol_bound = abs_tol + mcrd_max(nrm_old,nrm_new)*(rel_tol);
+    }while(err_new > tol_bound);
+    nrm_new_ptr[0] = nrm_new;
     err_old_ptr[0] = err_old;
     err_new_ptr[0] = err_new;
     dt_new_ptr[0] = dt;
@@ -725,12 +744,13 @@ void mcrd_ode_solve_o4(mcrd_vec* x_init,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
                        mcrd_flt  abs_tol,
+                       mcrd_flt  rel_tol,
                        mcrd_flt* workVec){
     static const mcrd_flt eps1 = 1e-5, eps2 = 1e-6, eps3 = 1e-15, eps4=1e-3;
     static mcrd_vec x_old,     x_new, vFld_old, vFld_new,
                     x_cmp, vFld_stg1, vFld_stg2, vFld_stg3, vFld_stg4;
     mcrd_int k = 0, breakflag = 0;
-    mcrd_flt n1, n2, n3, n4;
+    mcrd_flt n1, n2, n3;
     mcrd_flt dt1, dt2, dt, err_old, err_new, time_now, time_new;
     mcrd_flt theta = 0.0;
     x_old.c     = workVec;
@@ -768,7 +788,8 @@ void mcrd_ode_solve_o4(mcrd_vec* x_init,
                       &vFld_stg3, &vFld_stg4,
                       &x_cmp,
                       &dt1,&dt2,vecField,
-                      &err_old,&err_new,abs_tol);
+                      &err_old,&err_new,&n1,&n2,abs_tol,rel_tol);
+        n1 = n2;
         time_new = time_now + dt1;
         //use polynomial interponation for dense output.
         while(time_now <= t[k] && t[k] < time_new){
