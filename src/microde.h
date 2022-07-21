@@ -308,10 +308,37 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
                       mcrd_flt  rel_tol);
 
 /*
- * x_snap[0] assumed to have t_len many mcrd_vecs allocated to it.
- * to read time snapshot k, access x_snap[0][k].c, x_snap[0][k].n
- * workVec assumed to have 5*x_init->n many mcrd_flts allocated.
- */
+* Use the Heun embedded Runge-Kutta Runge-Kutta method to solve
+* an automous Ordinary Differential Equation of the form.
+* 
+*  dx
+* ----  = vecField(x)
+*  dt
+*
+* x_init   : the initial condition to this ODE. This struct is not modified.
+* x_snap   : An array of time snapshots of the ODE solution. These are computed
+*            using a dense output spline formula at the same order as DOPRI5.
+*            The array of struct pointers is organized so that the solution at
+*            time t[k] is at x_snap[k]. To access coorinate j at time k,
+*            dereference the x_snap variable as using x_snap[k]->c[j]. For each
+*            k, we have x_snap[k]->n is equal to x_init->n. 
+* t        : An array of floating point values representing the times at which
+*            we want to know the solution value.
+* t_len    : The number of entries in the array t.
+* vecField : A function pointer where first argument is input and second
+*            argument is the return value for an ODE's velocity field.
+*            Third variable is the variable argument count, always assumed
+*            zero at runtime. It is assumed that static variables
+*            are used within the implementation of vecField. These are
+*            set using the variable argument count, then not modified
+*            during calls by this routine.
+*            Evaluated as vecField(x_old,x_new,0). 3rd argument is the
+*            variable argument count.
+* abs_tol  : The desired local absolute error tolerance.
+* rel_tol  : The desired local relative error tolerance.
+* workVec  : A floating point array for storing temporary values. It is 
+*            assumed to have 5*x_init->n many mcrd_flts allocated.
+*/
 void mcrd_ode_solve_o1(mcrd_vec* x_init,
                        mcrd_vec** x_snap,
                        mcrd_flt* t,
@@ -380,10 +407,37 @@ void mcrd_o2_autostep(mcrd_vec* x_old,
                       mcrd_flt  abs_tol,
                       mcrd_flt  rel_tol);
 /*
- * x_snap[0] assumed to have t_len many mcrd_vecs allocated to it.
- * to read time snapshot k, access x_snap[0][k].c, x_snap[0][k].n
- * workVec assumed to have 7*x_init->n many mcrd_flts allocated.
- */
+* Use the Bogacki-Shampine embedded Runge-Kutta Runge-Kutta method to solve
+* an automous Ordinary Differential Equation of the form.
+* 
+*  dx
+* ----  = vecField(x)
+*  dt
+*
+* x_init   : the initial condition to this ODE. This struct is not modified.
+* x_snap   : An array of time snapshots of the ODE solution. These are computed
+*            using a dense output spline formula at the same order as DOPRI5.
+*            The array of struct pointers is organized so that the solution at
+*            time t[k] is at x_snap[k]. To access coorinate j at time k,
+*            dereference the x_snap variable as using x_snap[k]->c[j]. For each
+*            k, we have x_snap[k]->n is equal to x_init->n. 
+* t        : An array of floating point values representing the times at which
+*            we want to know the solution value.
+* t_len    : The number of entries in the array t.
+* vecField : A function pointer where first argument is input and second
+*            argument is the return value for an ODE's velocity field.
+*            Third variable is the variable argument count, always assumed
+*            zero at runtime. It is assumed that static variables
+*            are used within the implementation of vecField. These are
+*            set using the variable argument count, then not modified
+*            during calls by this routine.
+*            Evaluated as vecField(x_old,x_new,0). 3rd argument is the
+*            variable argument count.
+* abs_tol  : The desired local absolute error tolerance.
+* rel_tol  : The desired local relative error tolerance.
+* workVec  : A floating point array for storing temporary values. It is 
+*            assumed to have 7*x_init->n many mcrd_flts allocated.
+*/
 void mcrd_ode_solve_o2(mcrd_vec* x_init,
                        mcrd_vec** x_snap,
                        mcrd_flt* t,
@@ -458,10 +512,37 @@ void mcrd_o4_autostep(mcrd_vec* x_old,
                       mcrd_flt  rel_tol);
 
 /*
- * x_snap[0] assumed to have t_len many mcrd_vecs allocated to it.
- * to read time snapshot k, access x_snap[0][k].c, x_snap[0][k].n
- * workVec assumed to have 9*x_init->n many mcrd_flts allocated.
- */
+* Use the DOPRI5 embedded Runge-Kutta Runge-Kutta method to solve
+* an automous Ordinary Differential Equation of the form.
+* 
+*  dx
+* ----  = vecField(x)
+*  dt
+*
+* x_init   : the initial condition to this ODE. This struct is not modified.
+* x_snap   : An array of time snapshots of the ODE solution. These are computed
+*            using a dense output spline formula at the same order as DOPRI5.
+*            The array of struct pointers is organized so that the solution at
+*            time t[k] is at x_snap[k]. To access coorinate j at time k,
+*            dereference the x_snap variable as using x_snap[k]->c[j]. For each
+*            k, we have x_snap[k]->n is equal to x_init->n. 
+* t        : An array of floating point values representing the times at which
+*            we want to know the solution value.
+* t_len    : The number of entries in the array t.
+* vecField : A function pointer where first argument is input and second
+*            argument is the return value for an ODE's velocity field.
+*            Third variable is the variable argument count, always assumed
+*            zero at runtime. It is assumed that static variables
+*            are used within the implementation of vecField. These are
+*            set using the variable argument count, then not modified
+*            during calls by this routine.
+*            Evaluated as vecField(x_old,x_new,0). 3rd argument is the
+*            variable argument count.
+* abs_tol  : The desired local absolute error tolerance.
+* rel_tol  : The desired local relative error tolerance.
+* workVec  : A floating point array for storing temporary values. It is 
+*            assumed to have 9*x_init->n many mcrd_flts allocated.
+*/
 void mcrd_ode_solve_o4(mcrd_vec* x_init,
                        mcrd_vec** x_snap,
                        mcrd_flt* t,
