@@ -316,12 +316,13 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
 *  dt
 *
 * x_init   : the initial condition to this ODE. This struct is not modified.
-* x_snap   : An array of time snapshots of the ODE solution. These are computed
-*            using a dense output spline formula at the same order as DOPRI5.
-*            The array of struct pointers is organized so that the solution at
-*            time t[k] is at x_snap[k]. To access coorinate j at time k,
-*            dereference the x_snap variable as using x_snap[k]->c[j]. For each
-*            k, we have x_snap[k]->n is equal to x_init->n. 
+* x_snap   : Pointer to an array of time snapshots of the ODE solution.
+*            These are computed  using a dense output spline formula at the
+*            same order of arracy of this method. The expected memory layout
+*            is specified in mcrd_alloc_block().
+*            To access coorinate j at time k, dereference the x_snap variable 
+*            using x_snap[0][k].c[j]. For each  k, we have x_snap[0][k].n is
+*            equal to x_init->n. 
 * t        : An array of floating point values representing the times at which
 *            we want to know the solution value.
 * t_len    : The number of entries in the array t.
@@ -415,12 +416,13 @@ void mcrd_o2_autostep(mcrd_vec* x_old,
 *  dt
 *
 * x_init   : the initial condition to this ODE. This struct is not modified.
-* x_snap   : An array of time snapshots of the ODE solution. These are computed
-*            using a dense output spline formula at the same order as DOPRI5.
-*            The array of struct pointers is organized so that the solution at
-*            time t[k] is at x_snap[k]. To access coorinate j at time k,
-*            dereference the x_snap variable as using x_snap[k]->c[j]. For each
-*            k, we have x_snap[k]->n is equal to x_init->n. 
+* x_snap   : Pointer to an array of time snapshots of the ODE solution.
+*            These are computed  using a dense output spline formula at the
+*            same order of arracy of this method. The expected memory layout
+*            is specified in mcrd_alloc_block().
+*            To access coorinate j at time k, dereference the x_snap variable 
+*            using x_snap[0][k].c[j]. For each  k, we have x_snap[0][k].n is
+*            equal to x_init->n. 
 * t        : An array of floating point values representing the times at which
 *            we want to know the solution value.
 * t_len    : The number of entries in the array t.
@@ -520,12 +522,13 @@ void mcrd_o4_autostep(mcrd_vec* x_old,
 *  dt
 *
 * x_init   : the initial condition to this ODE. This struct is not modified.
-* x_snap   : An array of time snapshots of the ODE solution. These are computed
-*            using a dense output spline formula at the same order as DOPRI5.
-*            The array of struct pointers is organized so that the solution at
-*            time t[k] is at x_snap[k]. To access coorinate j at time k,
-*            dereference the x_snap variable as using x_snap[k]->c[j]. For each
-*            k, we have x_snap[k]->n is equal to x_init->n. 
+* x_snap   : Pointer to an array of time snapshots of the ODE solution.
+*            These are computed  using a dense output spline formula at the
+*            same order of arracy of this method. The expected memory layout
+*            is specified in mcrd_alloc_block().
+*            To access coorinate j at time k, dereference the x_snap variable 
+*            using x_snap[0][k].c[j]. For each  k, we have x_snap[0][k].n is
+*            equal to x_init->n. 
 * t        : An array of floating point values representing the times at which
 *            we want to know the solution value.
 * t_len    : The number of entries in the array t.
