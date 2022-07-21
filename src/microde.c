@@ -226,9 +226,9 @@ mcrd_flt mcrd_step_select(mcrd_flt dt,
                           mcrd_flt tol,
                           mcrd_int p){
     mcrd_flt step_select;
-    step_select = 0.9*pow(tol/err_new,1.0/(p+1.0))*pow(err_old/tol,0.08);
-    step_select = mcrd_max(0.25,step_select);
-    step_select = mcrd_min(1.5,step_select);
+    step_select = pow(tol/err_new,1.0/(p+1.0))*pow(err_old/tol,0.08);
+    step_select = mcrd_max(0.5,step_select);
+    step_select = mcrd_min(2.0,step_select);
     step_select *= dt;
     return step_select;
 }
