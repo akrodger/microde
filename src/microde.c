@@ -15,7 +15,7 @@
 #define MCRD_FIRST_DT_SETUP \
     {\
     /*begin 1st time step heuristic from Hairer and Wanner, nontstiff ODEs*/\
-    n1 = mcrd_rms(&(x_snap[0][0]));\
+    n1 = mcrd_rms(&(x_snap[0]));\
     n2 = mcrd_rms(&vFld_old);\
     if(n1 < eps1 || n2 < eps1){\
         dt1 = eps2;\
@@ -520,7 +520,7 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
 }
 
 void mcrd_ode_solve_o1(mcrd_vec* x_init,
-                       mcrd_vec** x_snap,
+                       mcrd_vec* x_snap,
                        mcrd_flt* t,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
@@ -545,7 +545,7 @@ void mcrd_ode_solve_o1(mcrd_vec* x_init,
     err_old = 1.0;
     err_new = 1.0;
     /*initializing vectors.*/
-    mcrd_copy(&(x_snap[0][0]), x_init);
+    mcrd_copy(&(x_snap[0]), x_init);
     mcrd_copy(&x_old, x_init);
     vecField(x_init,&vFld_old,0);
     MCRD_FIRST_DT_SETUP
@@ -561,13 +561,13 @@ void mcrd_ode_solve_o1(mcrd_vec* x_init,
         time_new = time_now + dt1;
         if(time_new > t[t_len-1] && k == t_len-1){
             mcrd_axpby(1.0,&x_old,
-                       t[t_len-1]-time_now,&vFld_old,&(x_snap[0][t_len-1]));
+                       t[t_len-1]-time_now,&vFld_old,&(x_snap[t_len-1]));
             break;
         }
         //use polynomial interponation for dense output.
         while(time_now <= t[k] && t[k] < time_new){
             theta = (t[k] - time_now)/dt1;
-            mcrd_axpby(theta,&x_old,1.0-theta,&x_new,&(x_snap[0][k]));
+            mcrd_axpby(theta,&x_old,1.0-theta,&x_new,&(x_snap[k]));
             k++;
             if(k >= t_len){
                 breakflag = 1;
@@ -623,7 +623,7 @@ void mcrd_o2_autostep(mcrd_vec* x_old,
 
 
 void mcrd_ode_solve_o2(mcrd_vec* x_init,
-                       mcrd_vec** x_snap,
+                       mcrd_vec* x_snap,
                        mcrd_flt* t,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
@@ -656,7 +656,7 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
     err_old = 1.0;
     err_new = 1.0;
     /*initializing vectors.*/
-    mcrd_copy(&(x_snap[0][0]), x_init);
+    mcrd_copy(&(x_snap[0]), x_init);
     mcrd_copy(&x_old, x_init);
     vecField(x_init,&vFld_old,0);
     MCRD_FIRST_DT_SETUP
@@ -679,7 +679,7 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
             m2 =     theta+(theta*(theta-1.0)*(1.0-(2.0*theta)));
             m3 = dt1*theta*(theta-1.0)*(theta-1.0);
             m4 = dt1*theta*(theta-1.0)*theta;
-            mcrd_lincombo(&(x_snap[0][k]),ptrWrk,scalWrk,4,
+            mcrd_lincombo(&(x_snap[k]),ptrWrk,scalWrk,4,
                            m1,&x_old,m2,&x_new,m3,&vFld_old,m4,&vFld_new);
             k++;
             if(k >= t_len){
@@ -739,7 +739,7 @@ void mcrd_o4_autostep(mcrd_vec* x_old,
 
 
 void mcrd_ode_solve_o4(mcrd_vec* x_init,
-                       mcrd_vec** x_snap,
+                       mcrd_vec* x_snap,
                        mcrd_flt* t,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
@@ -774,7 +774,7 @@ void mcrd_ode_solve_o4(mcrd_vec* x_init,
     err_old = 1.0;
     err_new = 1.0;
     /*initializing vectors.*/
-    mcrd_copy(&(x_snap[0][0]), x_init);
+    mcrd_copy(&(x_snap[0]), x_init);
     mcrd_copy(&x_old, x_init);
     vecField(x_init,&vFld_old,0);
     MCRD_FIRST_DT_SETUP
@@ -794,7 +794,7 @@ void mcrd_ode_solve_o4(mcrd_vec* x_init,
         //use polynomial interponation for dense output.
         while(time_now <= t[k] && t[k] < time_new){
             theta = (t[k] - time_now)/dt1;
-            mcrd_dopr_spline(&(x_snap[0][k]),
+            mcrd_dopr_spline(&(x_snap[k]),
                              &x_old,
                              &vFld_old,
                              &vFld_new,

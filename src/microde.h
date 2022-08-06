@@ -321,7 +321,7 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
 *            same order of arracy of this method. The expected memory layout
 *            is specified in mcrd_alloc_block().
 *            To access coorinate j at time k, dereference the x_snap variable 
-*            using x_snap[0][k].c[j]. For each  k, we have x_snap[0][k].n is
+*            using x_snap[k].c[j]. For each  k, we have x_snap[k].n is
 *            equal to x_init->n. 
 * t        : An array of floating point values representing the times at which
 *            we want to know the solution value.
@@ -341,7 +341,7 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
 *            assumed to have 5*x_init->n many mcrd_flts allocated.
 */
 void mcrd_ode_solve_o1(mcrd_vec* x_init,
-                       mcrd_vec** x_snap,
+                       mcrd_vec* x_snap,
                        mcrd_flt* t,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
@@ -421,7 +421,7 @@ void mcrd_o2_autostep(mcrd_vec* x_old,
 *            same order of arracy of this method. The expected memory layout
 *            is specified in mcrd_alloc_block().
 *            To access coorinate j at time k, dereference the x_snap variable 
-*            using x_snap[0][k].c[j]. For each  k, we have x_snap[0][k].n is
+*            using x_snap[k].c[j]. For each  k, we have x_snap[k].n is
 *            equal to x_init->n. 
 * t        : An array of floating point values representing the times at which
 *            we want to know the solution value.
@@ -441,7 +441,7 @@ void mcrd_o2_autostep(mcrd_vec* x_old,
 *            assumed to have 7*x_init->n many mcrd_flts allocated.
 */
 void mcrd_ode_solve_o2(mcrd_vec* x_init,
-                       mcrd_vec** x_snap,
+                       mcrd_vec* x_snap,
                        mcrd_flt* t,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),
@@ -527,7 +527,7 @@ void mcrd_o4_autostep(mcrd_vec* x_old,
 *            same order of arracy of this method. The expected memory layout
 *            is specified in mcrd_alloc_block().
 *            To access coorinate j at time k, dereference the x_snap variable 
-*            using x_snap[0][k].c[j]. For each  k, we have x_snap[0][k].n is
+*            using x_snap[k].c[j]. For each  k, we have x_snap[k].n is
 *            equal to x_init->n. 
 * t        : An array of floating point values representing the times at which
 *            we want to know the solution value.
@@ -547,7 +547,7 @@ void mcrd_o4_autostep(mcrd_vec* x_old,
 *            assumed to have 9*x_init->n many mcrd_flts allocated.
 */
 void mcrd_ode_solve_o4(mcrd_vec* x_init,
-                       mcrd_vec** x_snap,
+                       mcrd_vec* x_snap,
                        mcrd_flt* t,
                        mcrd_int  t_len,
                        void (*vecField)(mcrd_vec*,mcrd_vec*,int,...),

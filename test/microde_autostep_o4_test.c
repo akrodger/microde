@@ -43,7 +43,7 @@ int main(int argc, char** argv){
         x_init->c[k] = (k+1)%2;
     }
     vecField(NULL,NULL,2,a,0);
-    mcrd_ode_solve_o4(x_init,&x_snap,t, Nt+1,&vecField,abs_tol,rel_tol,work);
+    mcrd_ode_solve_o4(x_init,x_snap,t, Nt+1,&vecField,abs_tol,rel_tol,work);
     for(k=0;k<Nt;k++){
         x_init->c[0] = cos(a*t[k]);
         x_init->c[1] = sin(a*t[k]);

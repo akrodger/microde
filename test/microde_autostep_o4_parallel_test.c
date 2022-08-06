@@ -62,7 +62,7 @@ int main(int argc, char** argv){
     #if defined(SHMEM_PARA_MICRODE)
 	wtime = omp_get_wtime();
 	#endif
-    mcrd_ode_solve_o4(x_init,&x_snap,t, Nt+1,&vecField,abs_tol,rel_tol,work);
+    mcrd_ode_solve_o4(x_init,x_snap,t, Nt+1,&vecField,abs_tol,rel_tol,work);
     #if defined(SHMEM_PARA_MICRODE)
 	wtime = omp_get_wtime() - wtime;
     printf("\nComp Time = %le", wtime);
