@@ -21,8 +21,8 @@ header file. OpenMP is available and may be enabled for all addition operations
 through the use of a #define guard. The minimum  number of vector field
 operations are done at every time step, making this code have near the minimum
 operation count. Compactness and portability are favored wherever possible. The
-intent is to make is just as easily compiled on microcontrollers with FPUs just
-as easily as shared memory supercomputers.
+intent is to make it just as easily compiled on microcontrollers with FPUs
+as with shared memory supercomputers.
 
 # How do I use this?
 This is intended to be a small, portable, back-end library you can place into
