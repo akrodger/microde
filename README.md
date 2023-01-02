@@ -32,7 +32,7 @@ The core features of automatic time stepping are in the funtions:
 
 mcrd_ode_solve_o1(), mcrd_ode_solve_o2(), mcrd_ode_solve_o4()
 
-which are the order 1, order 2, and order 4 solvers spectively.
+which are the order 1, order 2, and order 4 solvers respectively.
 
 # How do I compile this?
 The same way any C header + source pair are compiled. Make sure that
