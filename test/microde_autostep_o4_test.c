@@ -34,7 +34,6 @@ int main(int argc, char** argv){
     }
     mcrd_int k       = 0;
     mcrd_flt a       = 1.0;
-    mcrd_flt dt      = t_final/Nt;
     mcrd_flt* t       = linspace(0.0, t_final, Nt+1);
     mcrd_vec* x_init   = mcrd_alloc_vec(numel);
     mcrd_flt* work     = (mcrd_flt*) malloc(sizeof(mcrd_flt)*9*numel);
@@ -54,10 +53,7 @@ int main(int argc, char** argv){
     mcrd_free_vec(x_init);
     free(work);
     free(t);
-    for(k=0;k<=Nt;k++){
-        free(x_snap[k].c);
-    }
-    free(x_snap);
+    mcrd_free_vec(x_snap);
     return 0;
 }
 

@@ -74,10 +74,7 @@ int main(int argc, char** argv){
     mcrd_free_vec(sten);
     free(work);
     free(t);
-    for(k=0;k<=Nt;k++){
-        free(x_snap[k].c);
-    }
-    free(x_snap);
+    mcrd_free_vec(x_snap);
     return 0;
 }
 

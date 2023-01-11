@@ -77,6 +77,10 @@ void mcrd_copy(mcrd_vec* dest, mcrd_vec* src);
 * Allocate an array of mcrd vectors which are accessed as
 * x[k].c[i] = entry i of vector k. (0 <= k < nvecs)
 * x[k].n    = numel for each k.
+* x[0].c points to the top of a numel by nvecs column major
+* array of all the coordinates. This function only does two mallocs.
+* To free, call
+*   mcrd_free_vec(x)
 *
 * Args:
 *  nvecs:    Number of vectors to be created.
@@ -131,7 +135,7 @@ void mcrd_axpbypcz(mcrd_flt a, mcrd_vec* x,
 * Linear combination with variable argument list.
 * variable argument list expected in alternating order, floats then vecs.
 * Example:
-*      mcrd_lincombo(x,work,3, 3.0,z, 4.0,w, -5.0,p);
+*      mcrd_lincombo(x,ptrWrk,scalWrk,3, 3.0,z, 4.0,w, -5.0,p);
 * Executes as:
 *          x->c[i] = 3.0*z->c[i] + 4.0*w->c[i] + (-5.0)*p->c[i]
 * 

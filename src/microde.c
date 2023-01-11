@@ -251,8 +251,10 @@ mcrd_vec* mcrd_alloc_block(mcrd_int nvecs, mcrd_int numel){
     mcrd_int k = 0;
     mcrd_vec* vec_block;
     vec_block = (mcrd_vec*) malloc(sizeof(mcrd_vec)*nvecs);
-    for(k=0;k<nvecs;k++){
-        vec_block[k].c = (mcrd_flt*) malloc(sizeof(mcrd_flt)*numel);
+    vec_block[0].c = (mcrd_flt*) malloc(sizeof(mcrd_flt)*numel*nvecs);
+    vec_block[0].n = numel;
+    for(k=1;k<nvecs;k++){
+        vec_block[k].c = &(vec_block[k-1].c[numel]);
         vec_block[k].n = numel;
     }
     return vec_block;
@@ -419,7 +421,7 @@ mcrd_flt mcrd_mse(mcrd_vec* x, mcrd_vec* y){
     #endif        
     N = x->n;
     #if defined(SHMEM_PARA_MICRODE)
-    #pragma omp for schedule(dynamic) reduction(+:mse)
+    #pragma omp for schedule(dynamic,chunkSize) reduction(+:mse)
     #endif
     for(i=0;i<x->n;i++){
         diff = (x->c[i] - y->c[i]);
@@ -448,7 +450,7 @@ mcrd_flt mcrd_rms(mcrd_vec* x){
     #endif
     N = x->n;
     #if defined(SHMEM_PARA_MICRODE)
-    #pragma omp for schedule(dynamic) reduction(+:rms)
+    #pragma omp for schedule(dynamic,chunkSize) reduction(+:rms)
     #endif
     for(i=0;i<x->n;i++){
         sqr = x->c[i]*x->c[i]/N;
