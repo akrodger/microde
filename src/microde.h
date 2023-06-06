@@ -134,6 +134,9 @@ void mcrd_axpbypcz(mcrd_flt a, mcrd_vec* x,
 /*
 * Linear combination with variable argument list.
 * variable argument list expected in alternating order, floats then vecs.
+* This summation method uses the compensation summation method described
+* in chapter 4 section 3 of Accuracy and Stability of Numerical Algorithms
+* by Nicholas Higham.
 * Example:
 *      mcrd_lincombo(x,ptrWrk,scalWrk,3, 3.0,z, 4.0,w, -5.0,p);
 * Executes as:

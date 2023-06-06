@@ -353,9 +353,12 @@ void mcrd_lincombo(mcrd_vec* x, mcrd_flt** ptrWrk, mcrd_flt* scalWrk,
     mcrd_int i,j, N, loopStart, loopEnd, thNum, thTot, chunkSize, chunkRem;
     mcrd_vec* z = NULL;
     mcrd_flt  a = 0.0;
+    mcrd_flt  e = 0.0;
+    mcrd_flt  y;
+    mcrd_flt  t;
     thNum = 0;
     thTot = 1;
-    va_start(arglist, numTerms);
+    va_start(arglist, numTerms);;
     for(j=0;j<numTerms;j++){
         a = va_arg(arglist, mcrd_flt);
         z = va_arg(arglist, mcrd_vec*);
@@ -370,7 +373,7 @@ void mcrd_lincombo(mcrd_vec* x, mcrd_flt** ptrWrk, mcrd_flt* scalWrk,
         }
     }
     #if defined(SHMEM_PARA_MICRODE)
-    #pragma omp parallel default(shared) private(i,j,a,N,\
+    #pragma omp parallel default(shared) private(i,j,a,e,y,t,N,\
                        loopStart,loopEnd,chunkRem,thNum,thTot)
     {
     thTot = omp_get_num_threads();
@@ -387,11 +390,14 @@ void mcrd_lincombo(mcrd_vec* x, mcrd_flt** ptrWrk, mcrd_flt* scalWrk,
         loopEnd   = loopStart + chunkSize;
     }
     for(i=loopStart;i<loopEnd;i++){
-        a = scalWrk[0];
-        x->c[i] = a*ptrWrk[0][i];
-        for(j=1;j<numTerms;j++){
-            a = scalWrk[j];
-            x->c[i] += a*ptrWrk[j][i];
+        x->c[i] = 0.0;
+        e       = 0.0;
+        for(j=0;j<numTerms;j++){
+            a       = scalWrk[j];
+            t       = x->c[i];
+            y       = (a*ptrWrk[j][i]) + e;
+            x->c[i] = t + y;
+            e       = (t - x->c[i]) + y;
         }
     }
     #if defined(SHMEM_PARA_MICRODE)
