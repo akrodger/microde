@@ -7,7 +7,7 @@ The entire library is less than 1400 lines when you include the documentation.
 microde (Micro ODE) is an implementation of several Runge-Kutta solvers from
 order 1 to 5. Automatic time step selection is implemented for the schemes:
 
-- Euler-Heun, an embedded order (1,2) method. (Order 1 due to lienar interp.)
+- Euler-Heun, an embedded order (1,2) method. (Order 1 due to linear interp.)
 - Bogacki-Shampine, an embedded (2,3) method. (Order 2 due to quad interp.)
 - Dormand-Prince, an embedded (5,4) method. (Order 4 due to quartic interp.)
 
