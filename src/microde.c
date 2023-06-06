@@ -504,7 +504,7 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
                       mcrd_flt  abs_tol,
                       mcrd_flt  rel_tol){
     mcrd_flt err_old = err_old_ptr[0];
-    mcrd_flt err_new = 1.0;
+    mcrd_flt err_new = err_old;
     mcrd_flt nrm_old = nrm_old_ptr[0];
     mcrd_flt nrm_new = 1.0;
     mcrd_flt tol_bound;
@@ -606,7 +606,7 @@ void mcrd_o2_autostep(mcrd_vec* x_old,
                       mcrd_flt  abs_tol,
                       mcrd_flt  rel_tol){
     mcrd_flt err_old = err_old_ptr[0];
-    mcrd_flt err_new = 1.0;
+    mcrd_flt err_new = err_old;
     mcrd_flt nrm_old = nrm_old_ptr[0];
     mcrd_flt nrm_new = 1.0;
     mcrd_flt tol_bound;
@@ -722,7 +722,7 @@ void mcrd_o4_autostep(mcrd_vec* x_old,
                       mcrd_flt  abs_tol,
                       mcrd_flt  rel_tol){
     mcrd_flt err_old = err_old_ptr[0];
-    mcrd_flt err_new = 1.0;
+    mcrd_flt err_new = err_old;
     mcrd_flt nrm_old = nrm_old_ptr[0];
     mcrd_flt nrm_new = 1.0;
     mcrd_flt tol_bound;
