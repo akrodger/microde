@@ -12,6 +12,7 @@
 #endif
 #define mcrd_min(a,b) (((a) < (b)) ? (a) : (b))
 #define mcrd_max(a,b) (((a) > (b)) ? (a) : (b))
+#define mcrd_abs(a)   (((a) > 0.0) ? (a) : -(a))
 #define MCRD_FIRST_DT_SETUP \
     {\
     /*begin 1st time step heuristic from Hairer and Wanner, nontstiff ODEs*/\
@@ -351,11 +352,14 @@ void mcrd_lincombo(mcrd_vec* x, mcrd_flt** ptrWrk, mcrd_flt* scalWrk,
                    mcrd_int numTerms, ...){
     va_list arglist;
     mcrd_int i,j, N, loopStart, loopEnd, thNum, thTot, chunkSize, chunkRem;
-    mcrd_vec* z = NULL;
-    mcrd_flt  a = 0.0;
-    mcrd_flt  e = 0.0;
-    mcrd_flt  y;
-    mcrd_flt  t;
+    mcrd_vec*          z = NULL;
+    mcrd_flt           a = 0.0;
+    mcrd_flt           e = 0.0;
+    mcrd_flt           s_term;
+    mcrd_flt           s_tabs;
+    mcrd_flt           s_full;
+    volatile mcrd_flt  y;
+    volatile mcrd_flt  t;
     thNum = 0;
     thTot = 1;
     va_start(arglist, numTerms);;
@@ -393,11 +397,20 @@ void mcrd_lincombo(mcrd_vec* x, mcrd_flt** ptrWrk, mcrd_flt* scalWrk,
         x->c[i] = 0.0;
         e       = 0.0;
         for(j=0;j<numTerms;j++){
-            a       = scalWrk[j];
-            t       = x->c[i];
-            y       = (a*ptrWrk[j][i]) + e;
-            x->c[i] = t + y;
-            e       = (t - x->c[i]) + y;
+            a      = scalWrk[j];
+            s_term = a*ptrWrk[j][i];
+            t      = x->c[i];
+            t      = t + s_term;
+            s_tabs = mcrd_abs(s_term);
+            s_full = mcrd_abs(x->c[i]);
+            if(s_full >= s_tabs){
+                y = x->c[i] - t;
+                e = y + s_term;
+            }else{
+                y = s_term - t;
+                e = y + x->c[i];
+            }
+            x->c[i] = t + e;
         }
     }
     #if defined(SHMEM_PARA_MICRODE)

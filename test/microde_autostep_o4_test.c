@@ -23,14 +23,14 @@ int main(int argc, char** argv){
     char* pEnd = NULL; 
     mcrd_flt pi      = acos(-1.0);
     mcrd_flt t_final = 2*pi;
-    mcrd_flt abs_tol = 5e-14;
-    mcrd_flt rel_tol = 5e-14;
+    mcrd_flt abs_tol = 1e-16;
+    mcrd_flt rel_tol = 1e-16;
     mcrd_int Nt;
     mcrd_int numel = 2;
     if(argc > 1){
         Nt = (mcrd_int) strtol(argv[1], &pEnd, 0);
     }else{
-        Nt = 100;
+        Nt = 10;
     }
     mcrd_int k       = 0;
     mcrd_flt a       = 1.0;

@@ -24,8 +24,8 @@ int main(int argc, char** argv){
     char* pEnd = NULL; 
     mcrd_flt pi      = acos(-1.0);
     mcrd_flt t_final = 2*pi;
-    mcrd_flt abs_tol = 1e-5;
-    mcrd_flt rel_tol = 1e-5;
+    mcrd_flt abs_tol = 1e-16;
+    mcrd_flt rel_tol = 1e-16;
     mcrd_int Nt;
     mcrd_int numel = 2;
     if(argc > 1){
