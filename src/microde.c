@@ -227,9 +227,13 @@ mcrd_flt mcrd_step_select(mcrd_flt dt,
                           mcrd_flt tol,
                           mcrd_int p){
     mcrd_flt step_select;
-    step_select = pow(tol/err_new,1.0/(p+1.0))*pow(err_old/tol,0.08);
-    step_select = mcrd_max(0.5,step_select);
-    step_select = mcrd_min(2.0,step_select);
+    if(err_new > 0.0){
+        step_select = pow(tol/err_new,1.0/(p+1.0))*pow(err_old/tol,0.08);
+        step_select = mcrd_max(0.5,step_select);
+        step_select = mcrd_min(2.0,step_select);
+    }else{
+        step_select = 2.0;
+    }
     step_select *= dt;
     return step_select;
 }
@@ -516,12 +520,13 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
                       mcrd_flt* nrm_new_ptr,
                       mcrd_flt  abs_tol,
                       mcrd_flt  rel_tol){
-    mcrd_flt err_old = err_old_ptr[0];
+    mcrd_flt err_old = err_new_ptr[0];
     mcrd_flt err_new = err_old;
     mcrd_flt nrm_old = nrm_old_ptr[0];
     mcrd_flt nrm_new = 1.0;
     mcrd_flt tol_bound;
     mcrd_flt dt = *dt_old_ptr;
+    err_old_ptr[0] = err_old;
     do{
         mcrd_axpby(1.0, x_old, dt, vFld_old, x_new);
         vecField(x_new,vFld_new,0);
@@ -535,7 +540,6 @@ void mcrd_o1_autostep(mcrd_vec* x_old,
         tol_bound = abs_tol + mcrd_max(nrm_old,nrm_new)*(rel_tol);
     }while(err_new > tol_bound);
     nrm_new_ptr[0] = nrm_new;
-    err_old_ptr[0] = err_old;
     err_new_ptr[0] = err_new;
     dt_new_ptr[0] = dt;
 }
@@ -563,7 +567,7 @@ void mcrd_ode_solve_o1(mcrd_vec* x_init,
     vFld_new.n = x_init->n;
     x_cmp.c    = &(workVec[4*x_init->n]);
     x_cmp.n    = x_init->n;
-    err_old = 1.0;
+    err_old = abs_tol;
     err_new = 1.0;
     /*initializing vectors.*/
     mcrd_copy(&(x_snap[0]), x_init);
@@ -618,14 +622,15 @@ void mcrd_o2_autostep(mcrd_vec* x_old,
                       mcrd_flt* nrm_new_ptr,
                       mcrd_flt  abs_tol,
                       mcrd_flt  rel_tol){
-    mcrd_flt err_old = err_old_ptr[0];
+    mcrd_flt err_old = err_new_ptr[0];
     mcrd_flt err_new = err_old;
     mcrd_flt nrm_old = nrm_old_ptr[0];
     mcrd_flt nrm_new = 1.0;
     mcrd_flt tol_bound;
     mcrd_flt dt = *dt_old_ptr;
+    err_old_ptr[0] = err_old;
     do{
-       mcrd_eval_bgsp(   x_old,   x_new,    x_cmp,
+        mcrd_eval_bgsp(   x_old,   x_new,    x_cmp,
                       vFld_old,vFld_new,vFld_stg1,vFld_stg2,
                       dt,vecField);
         err_old = err_new;
@@ -637,7 +642,6 @@ void mcrd_o2_autostep(mcrd_vec* x_old,
         tol_bound = abs_tol + mcrd_max(nrm_old,nrm_new)*(rel_tol);
     }while(err_new > tol_bound);
     nrm_new_ptr[0] = nrm_new;
-    err_old_ptr[0] = err_old;
     err_new_ptr[0] = err_new;
     dt_new_ptr[0] = dt;
 }
@@ -674,7 +678,7 @@ void mcrd_ode_solve_o2(mcrd_vec* x_init,
     vFld_stg1.n = x_init->n;
     vFld_stg2.c = &(workVec[6*x_init->n]);
     vFld_stg2.n = x_init->n;
-    err_old = 1.0;
+    err_old = abs_tol;
     err_new = 1.0;
     /*initializing vectors.*/
     mcrd_copy(&(x_snap[0]), x_init);
@@ -734,12 +738,13 @@ void mcrd_o4_autostep(mcrd_vec* x_old,
                       mcrd_flt* nrm_new_ptr,
                       mcrd_flt  abs_tol,
                       mcrd_flt  rel_tol){
-    mcrd_flt err_old = err_old_ptr[0];
+    mcrd_flt err_old = err_new_ptr[0];
     mcrd_flt err_new = err_old;
     mcrd_flt nrm_old = nrm_old_ptr[0];
     mcrd_flt nrm_new = 1.0;
     mcrd_flt tol_bound;
     mcrd_flt dt = *dt_old_ptr;
+    err_old_ptr[0] = err_old;
     do{
         mcrd_eval_dopr(   x_old,   x_new,    x_cmp,
                       vFld_old,vFld_new,vFld_stg1,vFld_stg2,
@@ -753,7 +758,6 @@ void mcrd_o4_autostep(mcrd_vec* x_old,
         tol_bound = abs_tol + mcrd_max(nrm_old,nrm_new)*(rel_tol);
     }while(err_new > tol_bound);
     nrm_new_ptr[0] = nrm_new;
-    err_old_ptr[0] = err_old;
     err_new_ptr[0] = err_new;
     dt_new_ptr[0] = dt;
 }
@@ -792,7 +796,7 @@ void mcrd_ode_solve_o4(mcrd_vec* x_init,
     vFld_stg3.n = x_init->n;
     vFld_stg4.c = &(workVec[8*x_init->n]);
     vFld_stg4.n = x_init->n;
-    err_old = 1.0;
+    err_old = abs_tol;
     err_new = 1.0;
     /*initializing vectors.*/
     mcrd_copy(&(x_snap[0]), x_init);
